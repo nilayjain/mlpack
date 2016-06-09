@@ -28,8 +28,6 @@ class StructuredForests
 
   void PrepareData(MatType& InputData);
 
- private:
-
   arma::vec GetFeatureDimension();
   
   arma::vec dt_1d(arma::vec& f, int n);

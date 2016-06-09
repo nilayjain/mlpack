@@ -15,6 +15,7 @@ endmacro ()
 
 # Recurse into each method mlpack provides.
 set(DIRS
+  preprocess
   adaboost
   amf
   ann
@@ -23,7 +24,7 @@ set(DIRS
   det
   emst
   edge_boxes
-  fastmks
+#  fastmks
   gmm
   hmm
   hoeffding_trees
@@ -48,6 +49,7 @@ set(DIRS
   radical
   range_search
   rann
+  rmva
   regularized_svd
   softmax_regression
   sparse_autoencoder

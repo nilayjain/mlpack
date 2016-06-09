@@ -229,10 +229,10 @@ RGB2LUV(CubeType& InImage)
     table(i) = table(i) * maxi;
   }
 
-  MatType rgb2xyz(3,3);
-  rgb2xyz(0,0) = 0.430574; rgb2xyz(0,1) = 0.430574; rgb2xyz(0,2) = 0.430574;
-  rgb2xyz(1,0) = 0.430574; rgb2xyz(1,1) = 0.430574; rgb2xyz(1,2) = 0.430574;
-  rgb2xyz(2,0) = 0.430574; rgb2xyz(2,1) = 0.430574; rgb2xyz(2,2) = 0.430574;
+  MatType rgb2xyz;
+  rgb2xyz << 0.430574 << 0.222015 << 0.020183 << arma::endr
+          << 0.341550 << 0.706655 << 0.129553 << arma::endr
+          << 0.178325 << 0.071330 << 0.939180;
 
   //see how to calculate this efficiently. numpy.dot does this.
   CubeType xyz(InImage.n_rows, InImage.n_cols, rgb2xyz.n_cols);
@@ -255,8 +255,16 @@ RGB2LUV(CubeType& InImage)
   nz = 1.0 / ( xyz.slice(0) + (15 * xyz.slice(1) ) + 
        (3 * xyz.slice(2) + EPS));
   
-  MatType L = arma::reshape(L, xyz.n_rows, xyz.n_cols);
-  
+
+  MatType L(xyz.n_rows, xyz.n_cols);
+  for(size_t j = 0; j < xyz.n_cols; ++j)
+  {
+    for(size_t i = 0; i < xyz.n_rows; ++i)
+    {
+      L(i, j) = table( (int) (1024 * xyz(i, j, 1) ) );
+    }
+  }
+
   MatType U, V;
   U = L % (13 * 4 * (xyz.slice(0) % nz) - 13 * 0.197833) + 88 * maxi;
   V = L % (13 * 9 * (xyz.slice(1) % nz) - 13 * 0.468331) + 134 * maxi;
@@ -265,8 +273,7 @@ RGB2LUV(CubeType& InImage)
   OutImage.slice(0) = L;
   OutImage.slice(1) = U;
   OutImage.slice(2) = V;
-  //OutImage = arma::join_slices(L,U);
-  //OutImage = arma::join_slices(OutImage, V);
+  
   return OutImage; 
 }
 
@@ -370,7 +377,7 @@ MaxAndLoc(CubeType& mag, arma::umat& Location)
   {
     for(size_t j = 0; j < mag.n_cols; ++j)
     {
-      double max = -9999999999.0; int max_loc = 0;
+      double max = -9999999999.0;
       for(size_t k = 0; k < mag.n_slices; ++k)
       {
         if(mag(i, j, k) > max)
@@ -900,4 +907,3 @@ PrepareData(MatType& InputData)
 } // namespace structured_tree
 } // namespace mlpack
 #endif
-
