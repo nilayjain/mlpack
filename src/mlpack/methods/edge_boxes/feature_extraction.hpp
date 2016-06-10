@@ -25,41 +25,41 @@ class StructuredForests
   
   StructuredForests(const std::map<std::string, size_t> inMap);
   
-  MatType LoadData(MatType& images, MatType& boundaries,
-                     MatType& segmentations);
+  LoadData(MatType& const images, MatType& const boundaries,\
+		   MatType& const segmentations);
 
   void PrepareData(MatType& InputData);
 
   arma::vec GetFeatureDimension();
   
-  arma::vec DistanceTransform1D(arma::vec& f, int n);
+  arma::vec DistanceTransform1D(arma::vec& const f, const size_t n);
   
   void DistanceTransform2D(MatType& im);
   
-  MatType DistanceTransformImage(MatType& im, double on);
+  MatType DistanceTransformImage(MatType& const im, double on);
   
   arma::field<CubeType> GetFeatures(MatType& img,arma::umat& loc);
   
-  CubeType CopyMakeBorder(CubeType& InImage,
-              int top, int left, int bottom, int right);
+  CubeType CopyMakeBorder(CubeType& InImage, size_t top, 
+              size_t left, size_t bottom, size_t right);
   
   void GetShrunkChannels(CubeType& InImage, CubeType& reg_ch, CubeType& ss_ch);
   
-  CubeType RGB2LUV(CubeType& InImage);
+  CubeType RGB2LUV(CubeType& const InImage);
   
   MatType bilinearInterpolation(MatType const &src,
                       size_t height, size_t width);
   
-  CubeType sepFilter2D(CubeType& InImage, 
-                        arma::vec& kernel, int radius);
+  CubeType sepFilter2D(CubeType& InOutImage, 
+                        arma::vec& kernel, size_t radius);
 
-  CubeType ConvTriangle(CubeType& InImage, int radius);
+  CubeType ConvTriangle(CubeType& InImage, size_t radius);
 
-  void Gradient(CubeType& InImage, 
+  void Gradient(CubeType& const InImage, 
                 MatType& Magnitude,
                 MatType& Orientation);
 
-  MatType MaxAndLoc(CubeType& mag, arma::umat& Location);
+  MatType MaxAndLoc(CubeType& mag, arma::umat& Location) const;
 
   CubeType Histogram(MatType& Magnitude,
                        MatType& Orientation, 
