@@ -23,7 +23,8 @@ set(DIRS
   decision_stump
   det
   emst
-  fastmks
+  edge_boxes
+#  fastmks
   gmm
   hmm
   hoeffding_trees
