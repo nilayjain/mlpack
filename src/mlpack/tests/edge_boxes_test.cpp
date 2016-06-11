@@ -62,6 +62,7 @@ void Test(arma::mat m1, arma::mat m2)
 
 void Test(arma::cube m1, arma::cube m2)
 {
+  m1.print();
   double* d1 = m1.memptr();
   double* d2 = m2.memptr();
   std::cout << arma::size(m1) << std::endl;
@@ -144,7 +145,7 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
          << 1 << 0 << 1 << arma::endr
          << 0 << 1 << 2;
   StructuredForests<arma::mat, arma::cube> SF(options);
-  DistanceTransformTest(input, 1, output, SF);
+  //DistanceTransformTest(input, 1, output, SF);
   
   arma::cube in1(input.n_rows, input.n_cols, 1);
   arma::cube c1(input.n_rows, input.n_cols, 1);
@@ -159,7 +160,7 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
              << 0 << 0 << 1 << 2 << 2;
   arma::cube out_b(out_border.n_rows, out_border.n_cols, 1);
   out_b.slice(0) = out_border;
-  //CopyMakeBorderTest(in1, out_b, SF);
+//  CopyMakeBorderTest(in1, out_b, SF);
 
 //  std::cout << "reached here" << std::endl;
   arma::mat out_conv;
@@ -171,12 +172,12 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
 
   c1.slice(0) = out_conv;
 
-  //ConvTriangleTest(in1, 2, c1, SF);
+//  ConvTriangleTest(in1, 2, c1, SF);
 
   arma::mat out_luv;
   out_luv << 0.15777 << 0.39216 << 0.41656 << arma::endr
-          << 0.25243 << 0.14790 << 0.71061 << arma::endr
-          << 0.19001 << 0.56765 << 0.46887;
+          << 0.07319 << 0.43151 << 0.36919 << arma::endr
+          << 0.12889 << 0.23490 << 0.36969;
 
   arma::cube out_c(output.n_rows, output.n_cols, 3);
   arma::cube in_luv(output.n_rows, output.n_cols, 3);
@@ -185,8 +186,13 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
     in_luv.slice(i) = output / 10;
     out_c.slice(i) = out_luv;
   }
-  //RGB2LUVTest(in_luv, out_c, SF);
+  std::cout << "in_luv" << std::endl;
+  in_luv.print();
+  std::cout << "out_c" << std::endl;
+  out_c.print();
+  RGB2LUVTest(in_luv, out_c, SF);
   std::cout << "finish" << std::endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END();
+

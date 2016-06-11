@@ -25,55 +25,56 @@ class StructuredForests
   
   StructuredForests(const std::map<std::string, size_t> inMap);
   
-  LoadData(MatType& const images, MatType& const boundaries,\
-		   MatType& const segmentations);
+  MatType LoadData(MatType const &images, MatType const &boundaries,\
+     MatType const &segmentations);
 
-  void PrepareData(MatType& InputData);
+  void PrepareData(MatType const &InputData);
 
   arma::vec GetFeatureDimension();
   
-  arma::vec DistanceTransform1D(arma::vec& const f, const size_t n);
+  arma::vec DistanceTransform1D(arma::vec const &f, const size_t n,\
+                                 const double inf);
   
-  void DistanceTransform2D(MatType& im);
+  void DistanceTransform2D(MatType &im, const double inf);
   
-  MatType DistanceTransformImage(MatType& const im, double on);
+  MatType DistanceTransformImage(MatType const &im, double on);
   
-  arma::field<CubeType> GetFeatures(MatType& img,arma::umat& loc);
+  arma::field<CubeType> GetFeatures(MatType const &image, arma::umat &loc);
   
-  CubeType CopyMakeBorder(CubeType& InImage, size_t top, 
-              size_t left, size_t bottom, size_t right);
+  CubeType CopyMakeBorder(CubeType const &InImage, size_t top, 
+               size_t left, size_t bottom, size_t right);
   
-  void GetShrunkChannels(CubeType& InImage, CubeType& reg_ch, CubeType& ss_ch);
+  void GetShrunkChannels(CubeType const &InImage, CubeType &reg_ch, CubeType &ss_ch);
   
-  CubeType RGB2LUV(CubeType& const InImage);
+  CubeType RGB2LUV(CubeType const &InImage);
   
   MatType bilinearInterpolation(MatType const &src,
                       size_t height, size_t width);
   
-  CubeType sepFilter2D(CubeType& InOutImage, 
-                        arma::vec& kernel, size_t radius);
+  CubeType sepFilter2D(CubeType &InOutImage, arma::vec &kernel,\
+                       size_t radius);
 
-  CubeType ConvTriangle(CubeType& InImage, size_t radius);
+  CubeType ConvTriangle(CubeType &InImage, size_t radius);
 
-  void Gradient(CubeType& const InImage, 
-                MatType& Magnitude,
-                MatType& Orientation);
+  void Gradient(CubeType const &InImage, 
+         MatType &Magnitude,
+         MatType &Orientation);
 
-  MatType MaxAndLoc(CubeType& mag, arma::umat& Location) const;
+  MatType MaxAndLoc(CubeType &mag, arma::umat &Location) const;
 
-  CubeType Histogram(MatType& Magnitude,
-                       MatType& Orientation, 
-                       int downscale, int interp);
+  CubeType Histogram(MatType const &Magnitude,
+              MatType const &Orientation, 
+              size_t downscale, size_t interp);
  
-  CubeType ViewAsWindows(CubeType& channels, arma::umat& loc);
+  CubeType ViewAsWindows(CubeType const &channels, arma::umat const &loc);
 
-  CubeType GetRegFtr(CubeType& channels, arma::umat& loc);
+  CubeType GetRegFtr(CubeType const &channels, arma::umat const &loc);
 
-  CubeType GetSSFtr(CubeType& channels, arma::umat& loc);
+  CubeType GetSSFtr(CubeType const &channels, arma::umat const &loc);
 
-  CubeType Rearrange(CubeType& channels);
+  CubeType Rearrange(CubeType const &channels);
 
-  CubeType PDist(CubeType& features, arma::uvec& grid_pos);
+  CubeType PDist(CubeType const &features, arma::uvec const &grid_pos);
 
 };
 
@@ -82,3 +83,4 @@ class StructuredForests
 } // namespace mlpack
 #include "feature_extraction_impl.hpp"
 #endif
+
