@@ -68,7 +68,7 @@ void Test(arma::cube m1, arma::cube m2)
   std::cout << arma::size(m1) << std::endl;
   std::cout << arma::size(m2) << std::endl;
   for (size_t i = 0; i < m1.n_elem; ++i)
-    BOOST_REQUIRE_CLOSE(*d1, *d2, 1e-3);  
+    BOOST_REQUIRE_CLOSE(*d1, *d2, 1e-2);  
 }
 
 void DistanceTransformTest(arma::mat& input,
@@ -76,9 +76,7 @@ void DistanceTransformTest(arma::mat& input,
                           StructuredForests<arma::mat, arma::cube>& SF)
 {
   arma::mat dt_output = SF.DistanceTransformImage(input, on);
-  dt_output.print();
   Test(dt_output, output);
-  std::cout << "DistanceTransformTest completed" << std::endl;
 } 
 
 void CopyMakeBorderTest(arma::cube& input,
@@ -87,7 +85,6 @@ void CopyMakeBorderTest(arma::cube& input,
 {
   arma::cube border_output = SF.CopyMakeBorder(input, 1, 1, 1, 1);
   Test(border_output, output);
-  std::cout << "CopyMakeBorderTest completed" << std::endl;
 }
 
 void RGB2LUVTest(arma::cube& input, arma::cube& output,
@@ -95,7 +92,6 @@ void RGB2LUVTest(arma::cube& input, arma::cube& output,
 {
   arma::cube luv = SF.RGB2LUV(input);
   Test(luv, output);
-  std::cout << "RGB2LUVTest completed" << std::endl;
 }
 
 void ConvTriangleTest(arma::cube& input, int radius,
@@ -103,7 +99,6 @@ void ConvTriangleTest(arma::cube& input, int radius,
 {
   arma::cube conv_out = SF.ConvTriangle(input, radius);
   Test(conv_out, output);
-  std::cout << "ConvTriangleTest completed" << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
@@ -174,24 +169,29 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
 
 //  ConvTriangleTest(in1, 2, c1, SF);
 
-  arma::mat out_luv;
-  out_luv << 0.15777 << 0.39216 << 0.41656 << arma::endr
-          << 0.07319 << 0.43151 << 0.36919 << arma::endr
-          << 0.12889 << 0.23490 << 0.36969;
 
-  arma::cube out_c(output.n_rows, output.n_cols, 3);
+arma::cube out_luv(3, 3, 3);
+out_luv.slice(0) << 0.191662 << 0.139897 << 0.191662 << arma::endr
+                << 0.139897 << 0.0 << 0.139897 << arma::endr
+                << 0.0 << 0.139897 << 0.191662;
+
+out_luv.slice(1) << 0.325926 << 0.325926 << 0.325926 << arma::endr
+                  << 0.325926 << 0.325926 << 0.325926 << arma::endr
+                  << 0.325926 << 0.325926 << 0.325926;
+
+out_luv.slice(2) << 0.496295 << 0.496295 << 0.496295 << arma::endr
+                  << 0.496295 << 0.496295 << 0.496295 << arma::endr
+                  << 0.496295 << 0.496295 << 0.496295;
+
+
   arma::cube in_luv(output.n_rows, output.n_cols, 3);
-  for(size_t i = 0; i < out_c.n_slices; ++i)
+  for(size_t i = 0; i < in_luv.n_slices; ++i)
   {
     in_luv.slice(i) = output / 10;
-    out_c.slice(i) = out_luv;
+    //out_c.slice(i) = out_luv;
   }
-  std::cout << "in_luv" << std::endl;
-  in_luv.print();
-  std::cout << "out_c" << std::endl;
-  out_c.print();
-  RGB2LUVTest(in_luv, out_c, SF);
-  std::cout << "finish" << std::endl;
+
+  RGB2LUVTest(in_luv, out_luv, SF);
 }
 
 BOOST_AUTO_TEST_SUITE_END();

@@ -244,6 +244,7 @@ RGB2LUV(CubeType const &InImage)
 
   //see how to calculate this efficiently. numpy.dot does this.
   CubeType xyz(InImage.n_rows, InImage.n_cols, rgb2xyz.n_cols);
+  /*
   for(size_t i = 0; i < InImage.n_rows; ++i)
   {
     for(size_t j = 0; j < InImage.n_cols; ++j)
@@ -260,6 +261,24 @@ RGB2LUV(CubeType const &InImage)
       }
     }
   }
+  */
+  for (size_t i = 0; i < InImage.slice(0).n_elem; ++i)
+  {
+    double r = InImage.slice(0)(i);
+    double g = InImage.slice(1)(i);
+    double b = InImage.slice(2)(i);
+    
+    xyz.slice(0)(i) = 0.430574 * r + 0.341550 * g + 0.178325 * b;
+    xyz.slice(1)(i) = 0.222015 * r + 0.706655 * g + 0.071330 * b;
+    xyz.slice(2)(i) = 0.020183 * r + 0.129553 * g + 0.939180 * b;
+  
+  /*
+    xyz.slice(0)(i) = 0.430574 * r + 0.341550 * g + 0.178325 * b;
+    xyz.slice(1)(i) = 0.222015 * r + 0.706655 * g + 0.129553 * b;
+    xyz.slice(2)(i) = 0.020183 * r + 0.071330 * g + 0.939180 * b;
+  */
+  }
+
   std::cout << "printing xyz" << std::endl;
   xyz.print();
   MatType nz(InImage.n_rows, InImage.n_cols);
@@ -913,8 +932,16 @@ PrepareData(MatType const &InputData)
     }
   }
 }
+/*
+template<typename MatType, typename CubeType>
+void StructuredForests<MatType, CubeType>::
+Discretize(MatType const &segs, )
+{
+  // see the return type.
 
 
+
+}*/
 } // namespace structured_tree
 } // namespace mlpack
 #endif
