@@ -76,6 +76,7 @@ class StructuredForests
 
   CubeType PDist(CubeType const &features, arma::uvec const &grid_pos);
 
+  void Discretize(MatType const &lbl, size_t n_class, size_t n_sample);
 };
 
 

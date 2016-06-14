@@ -244,24 +244,7 @@ RGB2LUV(CubeType const &InImage)
 
   //see how to calculate this efficiently. numpy.dot does this.
   CubeType xyz(InImage.n_rows, InImage.n_cols, rgb2xyz.n_cols);
-  /*
-  for(size_t i = 0; i < InImage.n_rows; ++i)
-  {
-    for(size_t j = 0; j < InImage.n_cols; ++j)
-    {
-      for(size_t k = 0; k < rgb2xyz.n_cols; ++k)
-      {
-        double val = 0;
-        for(size_t l = 0; l < InImage.n_slices; ++l)
-        {
-          val = val + InImage(i, j, l) *\
-              rgb2xyz(l, k);
-        }
-        xyz(i, j, k) = val;
-      }
-    }
-  }
-  */
+
   for (size_t i = 0; i < InImage.slice(0).n_elem; ++i)
   {
     double r = InImage.slice(0)(i);
@@ -279,14 +262,10 @@ RGB2LUV(CubeType const &InImage)
   */
   }
 
-  std::cout << "printing xyz" << std::endl;
-  xyz.print();
   MatType nz(InImage.n_rows, InImage.n_cols);
 
   nz = 1.0 / ( xyz.slice(0) + (15 * xyz.slice(1) ) + 
        (3 * xyz.slice(2) + 1e-35));
-  std::cout << arma::size(nz) << std::endl;
-  nz.print();
   CubeType OutImage(InImage.n_rows, InImage.n_cols, InImage.n_slices);
 
   for(size_t j = 0; j < xyz.n_cols; ++j)
@@ -848,8 +827,10 @@ PrepareData(MatType const &InputData)
     MatType ftrs = arma::zeros(n_pos + n_neg, n_smp_ftr_dim);
 
     //effectively a 3d array. . .
-    MatType lbls = arma::zeros( (n_pos + n_neg ) * g_size, g_size);
-
+    MatType lbls = arma::zeros( g_size * g_size, (n_pos + n_neg ));
+    // still to be done: store features and labels calculated 
+    // in the loop and store it in these Matrices.
+    // Could use some suggestions for this.
 
     size_t loop_iter = num_images * 5;
     for(size_t j = 0; j < loop_iter; j += 5)
@@ -907,7 +888,7 @@ PrepareData(MatType const &InputData)
       // cout << "num patches = " << n_patches_per_gt << " num elements + = " << pos_loc.n_elem\
       //  << " num elements - = " << neg_loc.n_elem << " dis.size " << dis.n_elem << endl;
 
-      //Field F contains reg_ftr and ss_ftr.
+      //Field F contains reg_ftr and ss_ftr for one image.
       arma::field<CubeType> F = this->GetFeatures(img, loc);
       //randomly sample 70 values each from reg_ftr and ss_ftr.
       /*
@@ -917,8 +898,10 @@ PrepareData(MatType const &InputData)
       arma::uvec rs = r.shuffle();
       arma::uvec ss = s.shuffle();
       */
-      CubeType lbl(g_size, g_size, 1000);
+      MatType lbl(g_size * g_size, 1000);
       CubeType s(segs.n_rows, segs.n_cols, 1);
+      
+      // have to do this or we can overload the CopyMakeBorder to support MatType.
       s.slice(0) = segs;
       CubeType in_segs = this->CopyMakeBorder(s, g_rad, 
                                       g_rad, g_rad, g_rad);
@@ -926,22 +909,50 @@ PrepareData(MatType const &InputData)
       {
         size_t x = loc(i, 0); size_t y = loc(i, 1);
         //cout << "x, y = " << x << " " << y << endl;
-        lbl.slice(i) = in_segs.slice(0).submat((x + g_rad) - g_rad, (y + g_rad) - g_rad, 
-                              (x + g_rad) + g_rad - 1, (y + g_rad) + g_rad - 1);
+        lbl.col(i) = arma::vectorise(in_segs.slice(0)\
+                    .submat((x + g_rad) - g_rad, (y + g_rad) - g_rad,\
+                     (x + g_rad) + g_rad - 1, (y + g_rad) + g_rad - 1));
       }
     }
   }
 }
-/*
+
 template<typename MatType, typename CubeType>
 void StructuredForests<MatType, CubeType>::
-Discretize(MatType const &segs, )
+Discretize(MatType const &labels, size_t n_class, size_t n_sample)
 {
+  // Map labels to discrete class labels.
+  // lbls : 256 * 20000.
+  // n_sample: number of samples for clustering structured labels 256
+
   // see the return type.
+  arma::uvec lis1(n_sample);
+  
+  MatType zs(n_sample, lbls.n_cols);
+  for (size_t i = 0; i < lis1.n_elem; ++i)
+    lis1(i) = i;
+  MatType DiscreteLabels = arma::zeros(n_sample, n);
+  
+  for (size_t i = 0; i < labels.n_cols; ++i)
+  {
+    arma::uvec z1 = lis1.shuffle();
+    arma::uvec z2 = lis2.shuffle();
+    for (size_t j = 0; j < zs.n_rows; ++i)
+      zs(i, j) = (labels(i, z1(j)) == labels(i, z2(j))) ? 1 : 0;
+  }
+  zs -= arma::mean(zs, 1); // calculate mean about cols. n_col = 256.
+  if ( arma::find(zs).n_elem == 0 )
+  {
+    labels.fill(ones);
+  }
+  else
+  {
+    //find most representative segs
+  }
+  // discretize zs by discretizing pca dimensions
+  size_t d = min(5, n_sample, (size_t)floor(log(n_class, 2)));
 
-
-
-}*/
+}
 } // namespace structured_tree
 } // namespace mlpack
 #endif

@@ -52,23 +52,14 @@ BOOST_AUTO_TEST_SUITE(EdgeBoxesTest);
 
 void Test(arma::mat m1, arma::mat m2)
 {
-  double* d1 = m1.memptr();
-  double* d2 = m2.memptr();
-  std::cout << arma::size(m1) << std::endl;
-  std::cout << arma::size(m2) << std::endl;
-  for (size_t i = 0; i < m1.n_elem; ++i)
-    BOOST_REQUIRE_CLOSE(*d1, *d2, 1e-3);  
+  for (size_t i = 0; i < m1.n_cols; ++i)
+    BOOST_REQUIRE_CLOSE(m1(i), m2(i), 1e-2);  
 }
 
 void Test(arma::cube m1, arma::cube m2)
 {
-  m1.print();
-  double* d1 = m1.memptr();
-  double* d2 = m2.memptr();
-  std::cout << arma::size(m1) << std::endl;
-  std::cout << arma::size(m2) << std::endl;
-  for (size_t i = 0; i < m1.n_elem; ++i)
-    BOOST_REQUIRE_CLOSE(*d1, *d2, 1e-2);  
+  for (size_t i = 0; i < m1.n_cols; ++i)
+    BOOST_REQUIRE_CLOSE(m1(i), m2(i), 1e-2);  
 }
 
 void DistanceTransformTest(arma::mat& input,
@@ -140,7 +131,7 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
          << 1 << 0 << 1 << arma::endr
          << 0 << 1 << 2;
   StructuredForests<arma::mat, arma::cube> SF(options);
-  //DistanceTransformTest(input, 1, output, SF);
+  DistanceTransformTest(input, 1, output, SF);
   
   arma::cube in1(input.n_rows, input.n_cols, 1);
   arma::cube c1(input.n_rows, input.n_cols, 1);
@@ -155,9 +146,8 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
              << 0 << 0 << 1 << 2 << 2;
   arma::cube out_b(out_border.n_rows, out_border.n_cols, 1);
   out_b.slice(0) = out_border;
-//  CopyMakeBorderTest(in1, out_b, SF);
+  CopyMakeBorderTest(in1, out_b, SF);
 
-//  std::cout << "reached here" << std::endl;
   arma::mat out_conv;
 
   out_conv << 1.20987 << 1.25925 << 1.30864 << arma::endr
@@ -167,7 +157,7 @@ BOOST_AUTO_TEST_CASE(FeatureExtractionTest)
 
   c1.slice(0) = out_conv;
 
-//  ConvTriangleTest(in1, 2, c1, SF);
+  ConvTriangleTest(in1, 2, c1, SF);
 
 
 arma::cube out_luv(3, 3, 3);
@@ -188,7 +178,6 @@ out_luv.slice(2) << 0.496295 << 0.496295 << 0.496295 << arma::endr
   for(size_t i = 0; i < in_luv.n_slices; ++i)
   {
     in_luv.slice(i) = output / 10;
-    //out_c.slice(i) = out_luv;
   }
 
   RGB2LUVTest(in_luv, out_luv, SF);
