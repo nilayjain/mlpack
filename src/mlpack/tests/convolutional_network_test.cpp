@@ -21,7 +21,7 @@
 
 #include <mlpack/methods/ann/init_rules/random_init.hpp>
 #include <mlpack/methods/ann/cnn.hpp>
-
+#include <mlpack/methods/ann/layer/inception_layer.hpp>
 #include <boost/test/unit_test.hpp>
 #include "test_tools.hpp"
 

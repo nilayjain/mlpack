@@ -24,6 +24,7 @@ add_executable(mlpack_test
   hoeffding_tree_test.cpp
   ind2sub_test.cpp
   init_rules_test.cpp
+  inception_layer_test.cpp
   kernel_test.cpp
   kernel_pca_test.cpp
   kernel_traits_test.cpp

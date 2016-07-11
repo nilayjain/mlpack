@@ -10,6 +10,7 @@
 
 #include <mlpack/core.hpp>
 #include <mlpack/methods/ann/pooling_rules/mean_pooling.hpp>
+#include <mlpack/methods/ann/pooling_rules/max_pooling.hpp>
 #include <mlpack/methods/ann/layer/layer_traits.hpp>
 
 namespace mlpack {

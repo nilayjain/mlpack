@@ -2,7 +2,7 @@
  * @file inception_layer.hpp
  * @author Nilay Jain
  *
- * Definition of the ConvLayer class.
+ * Definition of the InceptionLayer class.
  */
 
 #ifndef MLPACK_METHODS_ANN_LAYER_INCEPTION_LAYER_HPP
@@ -10,7 +10,7 @@
 
 #include <mlpack/core.hpp>
 #include <mlpack/methods/ann/activation_functions/rectifier_function.hpp>
-
+#include <mlpack/methods/ann/layer/layer_traits.hpp>
 #include <mlpack/methods/ann/layer/one_hot_layer.hpp>
 #include <mlpack/methods/ann/layer/conv_layer.hpp>
 #include <mlpack/methods/ann/layer/pooling_layer.hpp>
@@ -19,6 +19,9 @@
 #include <mlpack/methods/ann/layer/linear_layer.hpp>
 #include <mlpack/methods/ann/layer/base_layer.hpp>
 
+using namespace mlpack;
+using namespace mlpack::ann;
+//using namespace mlpack::optimization;
 
 /*
   this is a naive (hard coded) implementation of inception layer, 
@@ -70,110 +73,113 @@ See: `Going Deeper with Convolutions <http://arxiv.org/abs/1409.4842>`_.
 // write forward method
 // write backward method
 // write gradient method
-
+template<typename MatType = arma::mat,
+         typename CubeType = arma::cube,
+         typename InputDataType = arma::cube,
+         typename OutputDataType = arma::cube>
 class InceptionLayer
 {
-   //! Locally-stored filter/kernel width.
-  size_t wfilter;
-
-  //! Locally-stored filter/kernel height.
-  size_t hfilter;
-
+ public:
   //! Locally-stored number of input maps.
   size_t inMaps;
 
   //! Locally-stored number of output maps.
-  size_t outMaps;
+  //size_t outMaps;
+
+  //! bias value
+  size_t bias;
+
+  size_t out1, out3, out5, projSize3, projSize5, poolProj;
 
   //! Locally-stored delta object.
-  OutputDataType delta;
+  CubeType delta;
 
-  //! Locally-stored convolution Layer objects.
-  ConvLayer<> conv1, proj3, conv3, proj5, conv5, convPool;
-
-  //! Locally-stored bias layer objects.
-  BiasLayer<> bias1, biasProj3, bias3, biasProj5, bias5, biasPool;
-
-  //! Locally-stored base layer objects.
+  ConvLayer<> conv1;
+  ConvLayer<> proj3;
+  ConvLayer<> proj5;
+  ConvLayer<> conv5;
+  ConvLayer<> conv3;
+  ConvLayer<> convPool;
   BaseLayer2D<RectifierFunction> base1, baseProj3, base3, baseProj5, base5, basePool;
-
-  //! Locally-stored pooling layer object.
+  BiasLayer<> bias1, biasProj5, biasProj3, bias3, bias5, biasPool;
   PoolingLayer<MaxPooling> pool3;
-
- public:
   /**
-   * Create the ConvLayer object using the specified number of input maps,
-   * output maps, filter size, stride and padding parameter.
    *
    * @param inMaps The number of input maps.
    * @param outMaps The number of output maps.
-   * @param wfilter Width of the filter/kernel.
-   * @param wfilter Height of the filter/kernel.
-   * @param xStride Stride of filter application in the x direction.
-   * @param yStride Stride of filter application in the y direction.
-   * @param wPad Spatial padding width of the input.
-   * @param hPad Spatial padding height of the input.
-   */
+   *
+    */
   InceptionLayer( const size_t inMaps,
-                  const size_t outMaps,
                   const size_t out1,
-                  const size_t proj3,
+                  const size_t projSize3,
                   const size_t out3,
-                  const size_t proj5,
+                  const size_t projSize5,
+                  const size_t poolProj,
                   const size_t out5,
-                  const size_t projPool,
                   const size_t bias = 0) :
       inMaps(inMaps),
-      outMaps(outMaps),
+      bias(bias),
       out1(out1),
-      proj3(proj3),
       out3(out3),
-      proj5(proj5),
       out5(out5),
-      projPool(projPool),
-      bias(bias)
+      projSize5(projSize5),
+      projSize3(projSize3),
+      poolProj(poolProj),
+      conv1(inMaps, out1, 1, 1),
+      proj3(inMaps, projSize3, 1, 1),
+      conv3(projSize3, out3, 3, 3),
+      proj5(inMaps, projSize5, 1, 1),
+      conv5(projSize5, out5, 5, 5),
+      convPool(inMaps, poolProj, 1, 1),
+      bias1(out1, bias),
+      biasProj3(projSize3, bias),
+      bias3(out3, bias),
+      biasProj5(projSize5, bias),
+      bias5(out5, bias),
+      biasPool(poolProj, bias),
+      pool3(3)
   {
     // set up all the layers.
+      // 1x1 layer
+  //conv1(inMaps, out1, 1, 1);
+  //if(bias != 0)
+  //BiasLayer<> bias1(out1, bias);
+  //BaseLayer2D<RectifierFunction> base1;
+  
+  // 1x1 followed by 3x3 convolution
+  //ConvLayer<> proj3(inMaps, projSize3, 1, 1);
+  //if(bias != 0)
+    //BiasLayer<> biasProj3(projSize3, bias);
+//  BaseLayer2D<RectifierFunction> baseProj3;
 
-    // 1x1 layer
-    conv1(inMaps, out1, 1, 1);
-    if(bias != 0)
-      bias1(out1, bias);
-    //base layer already set up.
+  //ConvLayer<> conv3(projSize3, out3, 3, 3);
+  //if(bias != 0)
+   //BiasLayer<> bias3(out3, bias);
+  //BaseLayer2D<RectifierFunction> base3;
 
-    // 1x1 followed by 3x3 convolution
-    proj3(inMaps, proj3, 1, 1);
-    if(bias != 0)
-      biasProj3(proj3, bias);
-    //base layer already set up.
+  // 1x1 followd by 5x5 convolution
+  //ConvLayer<> proj5(inMaps, projSize5, 1, 1);
+  //if(bias != 0)
+    //BiasLayer<> biasProj5(projSize5, bias);
+  //BaseLayer2D<RectifierFunction> baseProj5;
+  //ConvLayer<> conv5(projSize5, out5, 5, 5);
+  //if(bias != 0)
+    //BiasLayer<> bias5(out5, bias);
+  //BaseLayer2D<RectifierFunction> base5;
 
-    conv3(proj3, out3, 3, 3);
-    if(bias != 0)
-      bias3(out3, bias);
-    //base layer already set up.    
+  // 3x3 pooling follwed by 1x1 convolution
+  //PoolingLayer<MaxPooling> pool3(3);
+  //ConvLayer<> convPool(inMaps, poolProj, 1, 1);
+  //if(bias != 0)
+    //BiasLayer<> biasPool(poolProj, bias);
+  //BaseLayer2D<RectifierFunction> basePool;
 
-    // 1x1 followd by 5x5 convolution
-    proj5(inMaps, proj5, 1, 1);
-    if(bias != 0)
-      biasProj5(proj5, bias);
-    //base layer already set up.
-    conv5(proj5, out5, 5, 5);
-    if(bias != 0)
-      bias5(out5, bias);
-    //base layer already set up.
 
-    // 3x3 pooling follwed by 1x1 convolution
-    pool3(3);
-    convPool(inMaps, poolProj, 1, 1);
-    if(bias != 0)
-      biasPool(poolProj, bias);
-    //base layer already set up.
   }
 
   // perform forward passes for all the layers.
 
-  template<typename MatType = arma::mat,
-           typename CubeType = arma::cube>
+
   void Forward(const CubeType& input, CubeType& output)
   {
     conv1.InputParameter() = input;
@@ -216,11 +222,10 @@ class InceptionLayer
   // Backward(error, network)
   // error : backpropagated error
   // g : calcualted gradient.
-  template<typename MatType = arma::mat,
-           typename CubeType = arma::cube>
+
   void Backward(CubeType&, CubeType& error, CubeType& )
   {
-    CubeType in;
+/*    CubeType in;
     base1.Backward(in, error.slices(0, base1.OutputParameter().n_slices - 1), base1.Delta());
     bias1.Backward(in, base1.Delta(), bias1.Delta());
     conv1.Backward(in, bias1.Delta(), conv1.Delta());
@@ -235,6 +240,7 @@ class InceptionLayer
 
     base5.Backward(in, error.slices(base3.OutputParameter().n_slices, 
                 base5.OutputParameter().n_slices - 1), base5.Delta());
+
     bias5.Backward(in, base5.Delta(), bias5.Delta());
     conv5.Backward(in, bias5.Delta(), conv5.Delta());
     baseProj5.Backward(in, conv5.Delta(), baseProj5.Delta());
@@ -245,17 +251,16 @@ class InceptionLayer
                           error.n_slices - 1, basePool.Delta());
     biasPool.Backward(in, basePool.Delta(), biasPool.Delta());
     convPool.Backward(in, biasPool.Delta(), convPool.Delta());
-    pool3.Backward(in, convPool.Delta(), pool3.Delta());
+    pool3.Backward(in, convPool.Delta(), pool3.Delta());*/
   }
 
-  template<typename MatType = arma::mat,
-           typename CubeType = arma::cube>
+
   void Gradient(const CubeType&, CubeType& delta, CubeType&)
   {
     //Delta(delta);
-    conv1.Gradient(conv1.InputParameter(), bias1.Delta(), conv1.Gradient());
+/*    conv1.Gradient(conv1.InputParameter(), bias1.Delta(), conv1.Gradient());
     bias1.Gradient(bias1.InputParameter(), base1.Delta(), bias1.Gradient());
-    base1.Gradient(base1.InputParameter(), this->Delta().slices(), base1.Gradient());
+    base1.Gradient(base1.InputParameter(), this->Delta().slices(0, ), base1.Gradient());
    
     proj3.Gradient(proj3.InputParameter(), biasProj3.Delta(), proj3.Gradient());
     biasProj3.Gradient(biasProj3.InputParameter(), baseProj3.Delta(), biasProj3.Gradient());
@@ -263,7 +268,7 @@ class InceptionLayer
     conv3.Gradient(conv3.InputParameter(), bias3.Delta(), conv3.Gradient());
     bias3.Gradient(bias3.InputParameter(), base3.Delta(), bias3.Gradient());
     base3.Gradient(base3.InputParameter(), this->Delta().slices(), base3.Gradient());
-
+    .
     proj5.Gradient(proj5.InputParameter(), biasProj5.Delta(), proj5.Gradient());
     biasProj5.Gradient(biasProj5.InputParameter(), baseProj5.Delta(), biasProj5.Gradient());
     baseProj5.Gradient(baseProj5.InputParameter(), conv5.Delta(), baseProj5.Gradient());
@@ -273,7 +278,7 @@ class InceptionLayer
 
     convPool.Gradient(convPool.InputParameter(), biasPool.Delta(), convPool.Gradient());
     biasPool.Gradient(biasPool.InputParameter(), basePool.Delta(), basePool.Gradient());
-    basePool.Gradient(basePool.InputParameter(), this->Delta().slices(), basePool.Gradient());
+    basePool.Gradient(basePool.InputParameter(), this->Delta().slices(), basePool.Gradient());*/
   }
   /*
   //! visual of subnetwork
@@ -290,7 +295,25 @@ class InceptionLayer
   CubeType const& Delta() const { return delta; }
   //! Modify the delta.
   CubeType& Delta() { return delta; }
+
+  //! Get the input parameter.
+  InputDataType const& InputParameter() const { return inputParameter; }
+  //! Modify the input parameter.
+  InputDataType& InputParameter() { return inputParameter; }
+
+  //! Get the output parameter.
+  OutputDataType const& OutputParameter() const { return outputParameter; }
+  //! Modify the output parameter.
+  OutputDataType& OutputParameter() { return outputParameter; }
+
+  //! Locally-stored input parameter object.
+  InputDataType inputParameter;
+
+  //! Locally-stored output parameter object.
+  OutputDataType outputParameter;
 }; // class InceptionLayer
 
 } // namespace ann
 } // namspace mlpack
+
+#endif

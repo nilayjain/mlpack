@@ -18,6 +18,7 @@ set(SOURCES
   sparse_bias_layer.hpp
   sparse_input_layer.hpp
   sparse_output_layer.hpp
+  inception_layer.hpp
 )
 
 # Add directory name to sources.
@@ -28,3 +29,4 @@ endforeach()
 # Append sources (with directory name) to list of all mlpack sources (used at
 # the parent scope).
 set(MLPACK_SRCS ${MLPACK_SRCS} ${DIR_SRCS} PARENT_SCOPE)
+
