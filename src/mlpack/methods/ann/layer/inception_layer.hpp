@@ -73,9 +73,7 @@ See: `Going Deeper with Convolutions <http://arxiv.org/abs/1409.4842>`_.
 // write forward method
 // write backward method
 // write gradient method
-template<typename MatType = arma::mat,
-         typename CubeType = arma::cube,
-         typename InputDataType = arma::cube,
+template<typename InputDataType = arma::cube,
          typename OutputDataType = arma::cube>
 class InceptionLayer
 {
@@ -92,16 +90,16 @@ class InceptionLayer
   size_t out1, out3, out5, projSize3, projSize5, poolProj;
 
   //! Locally-stored delta object.
-  CubeType delta;
+  OutputDataType delta;
 
   ConvLayer<> conv1;
   ConvLayer<> proj3;
+  ConvLayer<> conv3;
   ConvLayer<> proj5;
   ConvLayer<> conv5;
-  ConvLayer<> conv3;
   ConvLayer<> convPool;
   BaseLayer2D<RectifierFunction> base1, baseProj3, base3, baseProj5, base5, basePool;
-  BiasLayer<> bias1, biasProj5, biasProj3, bias3, bias5, biasPool;
+  //BiasLayer<> bias1, biasProj5, biasProj3, bias3, bias5, biasPool;
   PoolingLayer<MaxPooling> pool3;
   /**
    *
@@ -131,12 +129,6 @@ class InceptionLayer
       proj5(inMaps, projSize5, 1, 1),
       conv5(projSize5, out5, 5, 5),
       convPool(inMaps, poolProj, 1, 1),
-      bias1(out1, bias),
-      biasProj3(projSize3, bias),
-      bias3(out3, bias),
-      biasProj5(projSize5, bias),
-      bias5(out5, bias),
-      biasPool(poolProj, bias),
       pool3(3)
   {
     // set up all the layers.
@@ -179,37 +171,32 @@ class InceptionLayer
 
   // perform forward passes for all the layers.
 
-
-  void Forward(const CubeType& input, CubeType& output)
+  template<typename eT>
+  void Forward(const arma::Cube<eT>& input, arma::Cube<eT>& output)
   {
     conv1.InputParameter() = input;
 
     //! Forward pass for 1x1 conv path.
     conv1.Forward(conv1.InputParameter(), conv1.OutputParameter());
-    bias1.Forward(conv1.OutputParameter(), bias1.OutputParameter());
-    base1.Forward(bias1.OutputParameter(), base1.OutputParameter());
+    base1.Forward(conv1.OutputParameter(), base1.OutputParameter());
 
     proj3.Forward(input, proj3.OutputParameter());
-    biasProj3.Forward(proj3.OutputParameter(), biasProj3.OutputParameter());
-    baseProj3.Forward(biasProj3.OutputParameter(), baseProj3.OutputParameter());
+    baseProj3.Forward(proj3.OutputParameter(), baseProj3.OutputParameter());
     conv3.Forward(baseProj3.OutputParameter(), conv3.OutputParameter());
-    bias3.Forward(conv3.OutputParameter(), bias3.OutputParameter());
-    base3.Forward(bias3.OutputParameter(), base3.OutputParameter());    
+    base3.Forward(conv3.OutputParameter(), base3.OutputParameter());    
     
     proj5.Forward(input, proj5.OutputParameter());
-    biasProj5.Forward(proj5.OutputParameter(), biasProj5.OutputParameter());
-    baseProj5.Forward(biasProj5.OutputParameter(), baseProj5.OutputParameter());
+    baseProj5.Forward(proj5.OutputParameter(), baseProj5.OutputParameter());
     conv5.Forward(baseProj5.OutputParameter(), conv5.OutputParameter());
-    bias5.Forward(conv5.OutputParameter(), bias5.OutputParameter());
-    base5.Forward(bias5.OutputParameter(), base5.OutputParameter());
+    base5.Forward(conv5.OutputParameter(), base5.OutputParameter());
 
     pool3.Forward(input, pool3.OutputParameter());
     convPool.Forward(pool3.OutputParameter(), convPool.OutputParameter());
-    biasPool.Forward(convPool.OutputParameter(), biasPool.OutputParameter());
-    basePool.Forward(biasPool.OutputParameter(), basePool.OutputParameter());
+    basePool.Forward(convPool.OutputParameter(), basePool.OutputParameter());
 
     //! assert that all have same number of rows and columns.
     //! to do assertion...
+    std::cout << "reached here" << std::endl;
     output = arma::join_slices( 
               arma::join_slices(
                 arma::join_slices( 
@@ -222,8 +209,8 @@ class InceptionLayer
   // Backward(error, network)
   // error : backpropagated error
   // g : calcualted gradient.
-
-  void Backward(CubeType&, CubeType& error, CubeType& )
+  template<typename eT>
+  void Backward(arma::Cube<eT>&, arma::Cube<eT>& error, arma::Cube<eT>& )
   {
 /*    CubeType in;
     base1.Backward(in, error.slices(0, base1.OutputParameter().n_slices - 1), base1.Delta());
@@ -254,8 +241,8 @@ class InceptionLayer
     pool3.Backward(in, convPool.Delta(), pool3.Delta());*/
   }
 
-
-  void Gradient(const CubeType&, CubeType& delta, CubeType&)
+  template<typename eT>
+  void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>&)
   {
     //Delta(delta);
 /*    conv1.Gradient(conv1.InputParameter(), bias1.Delta(), conv1.Gradient());
@@ -292,9 +279,9 @@ class InceptionLayer
   */
 
   //! Get the delta.
-  CubeType const& Delta() const { return delta; }
+  OutputDataType const& Delta() const { return delta; }
   //! Modify the delta.
-  CubeType& Delta() { return delta; }
+  OutputDataType& Delta() { return delta; }
 
   //! Get the input parameter.
   InputDataType const& InputParameter() const { return inputParameter; }

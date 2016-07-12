@@ -9,38 +9,11 @@
 #include <mlpack/methods/edge_boxes/feature_extraction.hpp>
 
 #include <boost/test/unit_test.hpp>
-#include "old_boost_test_definitions.hpp"
+#include "test_tools.hpp"
 
 using namespace mlpack;
 using namespace mlpack::structured_tree;
-/*
-  
- 
-  //void GetShrunkChannels(CubeType& InImage, CubeType& reg_ch, CubeType& ss_ch);
-  
-  CubeType RGB2LUV(CubeType& InImage);
 
-  void Gradient(CubeType& InImage, 
-                MatType& Magnitude,
-                MatType& Orientation);
-
-  
-  CubeType Histogram(MatType& Magnitude,
-                       MatType& Orientation, 
-                       int downscale, int interp);
- 
-  /*
-  CubeType ViewAsWindows(CubeType& channels, arma::umat& loc);
-
-  CubeType GetRegFtr(CubeType& channels, arma::umat& loc);
-
-  CubeType GetSSFtr(CubeType& channels, arma::umat& loc);
-
-  CubeType Rearrange(CubeType& channels);
-
-  CubeType PDist(CubeType& features, arma::uvec& grid_pos);
-  ***-/
-*/
 
 BOOST_AUTO_TEST_SUITE(EdgeBoxesTest);
 
@@ -202,5 +175,6 @@ out_luv.slice(2) << 0.496295 << 0.496295 << 0.496295 << arma::endr
 }
 
 BOOST_AUTO_TEST_SUITE_END();
+
 
 
