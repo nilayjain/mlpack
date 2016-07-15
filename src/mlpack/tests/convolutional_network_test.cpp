@@ -21,7 +21,7 @@
 
 #include <mlpack/methods/ann/init_rules/random_init.hpp>
 #include <mlpack/methods/ann/cnn.hpp>
-#include <mlpack/methods/ann/layer/inception_layer.hpp>
+
 #include <boost/test/unit_test.hpp>
 #include "test_tools.hpp"
 
@@ -52,6 +52,8 @@ void BuildVanillaNetwork()
 
   // Build the target matrix.
   arma::mat Y = arma::zeros<arma::mat>(10, nPoints);
+  std::cout << nPoints << std::endl;
+  std::cout << arma::size(X) << std::endl;
   for (size_t i = 0; i < nPoints; i++)
   {
     if (i < nPoints / 2)
@@ -67,6 +69,8 @@ void BuildVanillaNetwork()
   arma::cube input = arma::cube(28, 28, nPoints);
   for (size_t i = 0; i < nPoints; i++)
     input.slice(i) = arma::mat(X.colptr(i), 28, 28);
+
+  std::cout << arma::size(input) << std::endl;
 
   /*
    * Construct a convolutional neural network with a 28x28x1 input layer,
@@ -141,3 +145,4 @@ BOOST_AUTO_TEST_CASE(VanillaNetworkTest)
 }
 
 BOOST_AUTO_TEST_SUITE_END();
+

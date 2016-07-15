@@ -35,44 +35,28 @@ BOOST_AUTO_TEST_SUITE(InceptionLayerTest);
 
 void BuildSampleNetwork()
 {
-  arma::mat X;
-  /*X.load("mnist_first250_training_4s_and_9s.arm");
-
-  // Normalize each point since these are images.
-  arma::uword nPoints = X.n_cols;
-  for (arma::uword i = 0; i < nPoints; i++)
-  {
-    X.col(i) /= norm(X.col(i), 2);
-  }
-
-  // Build the target matrix.
-  arma::mat Y = arma::zeros<arma::mat>(10, nPoints);
-  for (size_t i = 0; i < nPoints; i++)
-  {
-    if (i < nPoints / 2)
-    {
-      Y.col(i)(5) = 1;
-    }
-    else
-    {
-      Y.col(i)(8) = 1;
-    }
-  }*/
-
-  arma::cube input(28, 28, 192); input.randu();
+  arma::cube input(28, 28, 192, arma::fill::randu);
+  std::cout << "inception, input : " << arma::size(input) << std::endl;
   InceptionLayer<> in(192, 64, 96, 128, 16,  32,  32);
+  LinearMappingLayer<> linearLayer0(256, 3);
+  BiasLayer<> biasLayer0(3);
+  SoftmaxLayer<> softmaxLayer0;
+
   OneHotLayer outputLayer;
-  arma::mat Y = arma::zeros<arma::mat>(10, 192);
-  auto modules = std::tie(in);
+  arma::mat Y = arma::zeros<arma::mat>(3, 192);
+  auto modules = std::tie(in, linearLayer0, biasLayer0, softmaxLayer0);
 
   CNN<decltype(modules), decltype(outputLayer),
       RandomInitialization, MeanSquaredErrorFunction> net(modules, outputLayer);
 
 
-  RMSprop<decltype(net)> opt(net, 0.01, 0.88, 1e-8, 10 * input.n_slices, 0);
+  RMSprop<decltype(net)> opt(net, 0.01, 0.88, 1e-8, 3 * input.n_slices, 0);
 
   net.Train(input, Y, opt);
   std::cout << "reached here" << std::endl;
 }
-
+BOOST_AUTO_TEST_CASE(SampleInceptionLayerTest)
+{
+  BuildSampleNetwork();
+}
 BOOST_AUTO_TEST_SUITE_END();

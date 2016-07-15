@@ -153,6 +153,8 @@ LayerTypes, OutputLayerType, InitializationRuleType, PerformanceFunction
          const arma::mat& responses,
          OptimizerType<NetworkType>& optimizer)
 {
+  std::cout << "in function train" << std::endl;
+  std::cout << "input size (predictor) : " << arma::size(predictors) << std::endl;
   numFunctions = predictors.n_cols;
   this->predictors = predictors;
   this->responses = responses;
@@ -279,3 +281,4 @@ LayerTypes, OutputLayerType, InitializationRuleType, PerformanceFunction
 } // namespace mlpack
 
 #endif
+
