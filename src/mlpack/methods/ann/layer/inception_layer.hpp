@@ -125,10 +125,10 @@ class InceptionLayer
       poolProj(poolProj),
       conv1(inMaps, out1, 1, 1),
       proj3(inMaps, projSize3, 1, 1),
-      conv3(projSize3, out3, 3, 3, 1, 1, 2, 2),
+      conv3(projSize3, out3, 3, 3, 1, 1, 1, 1),
       proj5(inMaps, projSize5, 1, 1),
-      conv5(projSize5, out5, 5, 5, 1, 1, 4, 4),
-      convPool(inMaps, poolProj, 1, 1),
+      conv5(projSize5, out5, 5, 5, 1, 1, 2, 2),
+      convPool(inMaps, poolProj, 1, 1, 1, 1, 1, 1),
       pool3(3),
       bias1(out1, bias),
       biasProj3(projSize3, bias),
@@ -198,24 +198,15 @@ class InceptionLayer
   void Forward(const arma::Cube<eT>& input, arma::Cube<eT>& output)
   {
     // Example input 28 x 28 x 192.
-    std::cout << "In Forward" << std::endl;
     conv1.InputParameter() = input;
     //this->InputParameter() = input;
     //! Forward pass for 1x1 conv path.
-    std::cout << "In Forward" << std::endl;
 
-    std::cout << arma::size(input) << std::endl;
-    std::cout << arma::size(conv1.InputParameter()) << std::endl;
-    std::cout << arma::size(conv1.OutputParameter()) << std::endl;
     conv1.Forward(conv1.InputParameter(), conv1.OutputParameter());
     // no InputParameter() update for bias term.
-    std::cout << "In Forward" << std::endl;
     bias1.Forward(conv1.OutputParameter(), bias1.OutputParameter());
-    std::cout << "In Forward" << std::endl;
     base1.InputParameter() = bias1.OutputParameter();
-    std::cout << "In Forward" << std::endl;
     base1.Forward(bias1.OutputParameter(), base1.OutputParameter());
-    std::cout << "In Forward" << std::endl;
 
     proj3.InputParameter() = input;
     proj3.Forward(input, proj3.OutputParameter());
@@ -227,7 +218,6 @@ class InceptionLayer
     bias3.Forward(conv3.OutputParameter(), bias3.OutputParameter());
     base3.InputParameter() = bias3.OutputParameter();
     base3.Forward(bias3.OutputParameter(), base3.OutputParameter());    
-    std::cout << "In Forward" << std::endl;
     
     proj5.InputParameter() = input;
     proj5.Forward(input, proj5.OutputParameter());
@@ -239,8 +229,7 @@ class InceptionLayer
     bias5.Forward(conv5.OutputParameter(), bias5.OutputParameter());
     base5.InputParameter() = bias5.OutputParameter();
     base5.Forward(bias5.OutputParameter(), base5.OutputParameter());
-    std::cout << "In Forward" << std::endl;
-
+ 
     pool3.InputParameter() = input;
     pool3.Forward(input, pool3.OutputParameter());
     convPool.InputParameter() = pool3.OutputParameter();
@@ -250,13 +239,17 @@ class InceptionLayer
     basePool.Forward(convPool.OutputParameter(), basePool.OutputParameter());
 
     //! assert that all have same number of rows and columns.
-    //! to do assertion...
-    std::cout << "reached here" << std::endl;
+
+/*    std::cout << arma::size(base1.OutputParameter()) << std::endl;
+    std::cout << arma::size(base3.OutputParameter()) << std::endl;
+    std::cout << arma::size(base5.OutputParameter()) << std::endl;
+    std::cout << arma::size(basePool.OutputParameter()) << std::endl;*/
     output = arma::join_slices( 
               arma::join_slices(
                 arma::join_slices( 
                   base1.OutputParameter(), base3.OutputParameter() ), 
                   base5.OutputParameter() ), basePool.OutputParameter());
+
   }
 
   //! perform backward passes for all the layers.

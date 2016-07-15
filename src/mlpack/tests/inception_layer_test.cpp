@@ -38,13 +38,16 @@ void BuildSampleNetwork()
   arma::cube input(28, 28, 192, arma::fill::randu);
   std::cout << "inception, input : " << arma::size(input) << std::endl;
   InceptionLayer<> in(192, 64, 96, 128, 16,  32,  32);
-  LinearMappingLayer<> linearLayer0(256, 3);
-  BiasLayer<> biasLayer0(3);
+  ConvLayer<> convLayer0(256, 10, 1, 1);
+  BiasLayer2D<> biasLayer0(8);
+  BaseLayer2D<> baseLayer0;
+  LinearMappingLayer<> linearLayer0(7840, 3);
+  BiasLayer<> biasLayer1(3);
   SoftmaxLayer<> softmaxLayer0;
 
   OneHotLayer outputLayer;
-  arma::mat Y = arma::zeros<arma::mat>(3, 192);
-  auto modules = std::tie(in, linearLayer0, biasLayer0, softmaxLayer0);
+  arma::mat Y = arma::zeros<arma::mat>(3, 1);
+  auto modules = std::tie(in, convLayer0, biasLayer0, baseLayer0, linearLayer0, biasLayer1, softmaxLayer0);
 
   CNN<decltype(modules), decltype(outputLayer),
       RandomInitialization, MeanSquaredErrorFunction> net(modules, outputLayer);

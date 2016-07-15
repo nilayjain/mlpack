@@ -83,7 +83,6 @@ class ConvLayer
     const size_t wConv = ConvOutSize(input.n_rows, wfilter, xStride, wPad);
     const size_t hConv = ConvOutSize(input.n_cols, hfilter, yStride, hPad);
     output = arma::zeros<arma::Cube<eT> >(wConv, hConv, outMaps);
-    std::cout << "Forward: inpput size, outputsize " << arma::size(input) << " , " << arma::size(output) << "inmap = " << inMaps << " outmap = " << outMaps << std::endl;
     for (size_t outMap = 0, outMapIdx = 0; outMap < outMaps; outMap++)
     {
       for (size_t inMap = 0; inMap < inMaps; inMap++, outMapIdx++)
@@ -95,7 +94,6 @@ class ConvLayer
         output.slice(outMap) += convOutput;
       }
     }
-    std::cout << "Forward: reached here" << std::endl;
   }
 
   /**
