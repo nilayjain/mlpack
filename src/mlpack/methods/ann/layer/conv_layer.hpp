@@ -110,6 +110,9 @@ class ConvLayer
                 const arma::Cube<eT>& gy,
                 arma::Cube<eT>& g)
   {
+/*    std::cout << "in conv_layer backward..." << std::endl;
+    std::cout << "gy.size = " << arma::size(gy) << std::endl;
+    std::cout << "g.size = " << arma::size(g) << std::endl;*/
     g = arma::zeros<arma::Cube<eT> >(inputParameter.n_rows,
                                      inputParameter.n_cols,
                                      inputParameter.n_slices);

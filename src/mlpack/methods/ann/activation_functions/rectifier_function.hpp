@@ -108,3 +108,4 @@ class RectifierFunction
 } // namespace mlpack
 
 #endif
+

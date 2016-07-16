@@ -89,9 +89,6 @@ class InceptionLayer
 
   size_t out1, out3, out5, projSize3, projSize5, poolProj;
 
-  //! Locally-stored delta object.
-  OutputDataType delta;
-
   ConvLayer<> conv1;
   ConvLayer<> proj3;
   ConvLayer<> conv3;
@@ -197,6 +194,7 @@ class InceptionLayer
   template<typename eT>
   void Forward(const arma::Cube<eT>& input, arma::Cube<eT>& output)
   {
+    std::cout << "inception forward pass start.." << std::endl;
     // Example input 28 x 28 x 192.
     conv1.InputParameter() = input;
     //this->InputParameter() = input;
@@ -250,6 +248,7 @@ class InceptionLayer
                   base1.OutputParameter(), base3.OutputParameter() ), 
                   base5.OutputParameter() ), basePool.OutputParameter());
 
+  std::cout << "inception forward pass end.." << std::endl;
   }
 
   //! perform backward passes for all the layers.
@@ -262,71 +261,117 @@ class InceptionLayer
   template<typename eT>
   void Backward(arma::Cube<eT>&, arma::Cube<eT>& error, arma::Cube<eT>& )
   {
+    std::cout << "inception backward pass start.." << std::endl;
+    //std::cout << "error.size = " << arma::size(error) << std::endl;
     InputDataType in;
-    base1.Backward(in, error.slices(0, base1.OutputParameter().n_slices - 1), base1.Delta());
-    bias1.Backward(in, base1.Delta(), bias1.Delta());
-    conv1.Backward(in, bias1.Delta(), conv1.Delta());
+    size_t slice_idx = 0;
 
-    base3.Backward(in, error.slices(base1.OutputParameter().n_slices, 
-                base3.OutputParameter().n_slices - 1), base3.Delta());
-    bias3.Backward(in, base3.Delta(), bias3.Delta());
-    conv3.Backward(in, bias3.Delta(), conv3.Delta());
-    baseProj3.Backward(in, conv3.Delta(), baseProj3.Delta());
-    biasProj3.Backward(in, baseProj3.Delta(), biasProj3.Delta());
-    proj3.Backward(in, biasProj3.Delta(), proj3.Delta());
+    arma::cube subError = error.slices(slice_idx, slice_idx + base1.OutputParameter().n_slices - 1);
+    slice_idx += base1.OutputParameter().n_slices;
+    //std::cout << "subError.size = " << arma::size(subError) << std::endl;
+    //std::cout << "output size = " << arma::size(base1.OutputParameter()) << std::endl;
+    base1.Backward(base1.OutputParameter(), subError, base1.Delta());
+    bias1.Backward(bias1.OutputParameter(), base1.Delta(), bias1.Delta());
+    conv1.Backward(conv1.OutputParameter(), bias1.Delta(), conv1.Delta());
+    //std::cout << "inception backward pass 1x1" << std::endl;
 
-    base5.Backward(in, error.slices(base3.OutputParameter().n_slices, 
-                base5.OutputParameter().n_slices - 1), base5.Delta());
+    subError = error.slices(slice_idx, slice_idx + base3.OutputParameter().n_slices - 1);
+    slice_idx += base3.OutputParameter().n_slices;
+    //std::cout << "subError.size = " << arma::size(subError) << std::endl;
+    //std::cout << "output size = " << arma::size(base3.OutputParameter()) << std::endl;
+    base3.Backward(base3.OutputParameter(), subError, base3.Delta());
+    bias3.Backward(bias3.OutputParameter(), base3.Delta(), bias3.Delta());
+    conv3.Backward(conv3.OutputParameter(), bias3.Delta(), conv3.Delta());
+    baseProj3.Backward(baseProj3.OutputParameter(), conv3.Delta(), baseProj3.Delta());
+    biasProj3.Backward(biasProj3.OutputParameter(), baseProj3.Delta(), biasProj3.Delta());
+    proj3.Backward(proj3.OutputParameter(), biasProj3.Delta(), proj3.Delta());
+    //std::cout << "inception backward pass 3x3" << std::endl;
+    
 
-    bias5.Backward(in, base5.Delta(), bias5.Delta());
-    conv5.Backward(in, bias5.Delta(), conv5.Delta());
-    baseProj5.Backward(in, conv5.Delta(), baseProj5.Delta());
-    biasProj5.Backward(in, baseProj5.Delta(), biasProj5.Delta());
-    proj5.Backward(in, biasProj5.Delta(), proj5.Delta());
+    subError = error.slices(slice_idx, slice_idx + base5.OutputParameter().n_slices - 1);
+    slice_idx += base5.OutputParameter().n_slices;
+    //std::cout << "subError.size = " << arma::size(subError) << std::endl;
+    //std::cout << "output size = " << arma::size(base5.OutputParameter()) << std::endl;
+    //std::cout << "reached here" << std::endl;
+    base5.Backward(base5.OutputParameter(), subError, base5.Delta());
+    //std::cout << "reached here" << std::endl;
+    bias5.Backward(bias5.OutputParameter(), base5.Delta(), bias5.Delta());
+    //std::cout << "reached here" << std::endl;
+    conv5.Backward(conv5.OutputParameter(), bias5.Delta(), conv5.Delta());
+    //std::cout << "reached here" << std::endl;
+    baseProj5.Backward(baseProj5.OutputParameter(), conv5.Delta(), baseProj5.Delta());
+    //std::cout << "reached here" << std::endl;
+    biasProj5.Backward(biasProj5.OutputParameter(), baseProj5.Delta(), biasProj5.Delta());
+    //std::cout << "reached here" << std::endl;
+    proj5.Backward(proj5.OutputParameter(), biasProj5.Delta(), proj5.Delta());
+    //std::cout << "inception backward pass 5x5" << std::endl;
 
-    basePool.Backward(in, error.slices(base5.OutputParameter().n_slices - 1, 
-                          error.n_slices - 1), basePool.Delta());
-    biasPool.Backward(in, basePool.Delta(), biasPool.Delta());
-    convPool.Backward(in, biasPool.Delta(), convPool.Delta());
-    pool3.Backward(in, convPool.Delta(), pool3.Delta());
+    subError = error.slices(slice_idx, slice_idx + basePool.OutputParameter().n_slices - 1);
+    slice_idx += basePool.OutputParameter().n_slices;
+    basePool.Backward(basePool.OutputParameter(), subError, basePool.Delta());
+    biasPool.Backward(biasPool.OutputParameter(), basePool.Delta(), biasPool.Delta());
+    convPool.Backward(convPool.OutputParameter(), biasPool.Delta(), convPool.Delta());
+    pool3.Backward(pool3.OutputParameter(), convPool.Delta(), pool3.Delta());
+    std::cout << "inception backward pass end.." << std::endl;
+
   }
 
   template<typename eT>
   void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>&)
   {
-    Delta(delta);
+    std::cout << "inception gradient start.." << std::endl;
+    std::cout << "delta.size = " << arma::size(delta) << std::endl;
+    std::cout << "bias1.size = " << arma::size(bias1.OutputParameter()) << std::endl;
+    std::cout << "bias3.size = " << arma::size(bias3.OutputParameter()) << std::endl;
+    std::cout << "bias5.size = " << arma::size(bias5.OutputParameter()) << std::endl;
+    std::cout << "biasPool.size = " << arma::size(biasPool.OutputParameter()) << std::endl;
+    //Delta(delta);
+    size_t slice_idx = 0;
+    arma::cube deltaNext = delta.slices(slice_idx, slice_idx + bias1.OutputParameter().n_slices - 1);
     conv1.Gradient(conv1.InputParameter(), bias1.Delta(), conv1.Gradient());
-    bias1.Gradient(bias1.InputParameter(), delta.
-        slices(0, bias1.OutputParameter().n_slices - 1), bias1.Gradient());
+    bias1.Gradient(bias1.InputParameter(), deltaNext, bias1.Gradient());
+    slice_idx += bias1.OutputParameter().n_slices;
+    
     /*base1.Gradient(base1.InputParameter(), delta.
         slices(0, base1.OutputParameter().n_slices - 1), base1.Gradient());*/
    
+    deltaNext = delta.slices(slice_idx, slice_idx + bias3.OutputParameter().n_slices - 1);
     proj3.Gradient(proj3.InputParameter(), biasProj3.Delta(), proj3.Gradient());
     biasProj3.Gradient(biasProj3.InputParameter(), conv3.Delta(), biasProj3.Gradient());
     //baseProj3.Gradient(baseProj3.InputParameter(), conv3.Delta(), baseProj3.Gradient());
     conv3.Gradient(conv3.InputParameter(), bias3.Delta(), conv3.Gradient());
-    bias3.Gradient(bias3.InputParameter(), delta.
-        slices(bias1.OutputParameter().n_slices, bias3.OutputParameter().n_slices - 1), bias3.Gradient());
+    bias3.Gradient(bias3.InputParameter(), deltaNext, bias3.Gradient());
+    slice_idx += bias3.OutputParameter().n_slices;
+   
    /* base3.Gradient(base3.InputParameter(), delta.
         slices(base1.OutputParameter().n_slices, base3.OutputParameter().n_slices - 1),
          base3.Gradient());
    */ 
+
+    deltaNext = delta.slices(slice_idx, slice_idx + bias5.OutputParameter().n_slices - 1);     
     proj5.Gradient(proj5.InputParameter(), biasProj5.Delta(), proj5.Gradient());
     biasProj5.Gradient(biasProj5.InputParameter(), conv5.Delta(), biasProj5.Gradient());
     //baseProj5.Gradient(baseProj5.InputParameter(), conv5.Delta(), baseProj5.Gradient());
     conv5.Gradient(conv5.InputParameter(), bias5.Delta(), conv5.Gradient());
-    bias5.Gradient(bias5.InputParameter(), delta.
-        slices(bias3.OutputParameter().n_slices, bias5.OutputParameter().n_slices - 1), bias5.Gradient());
+    bias5.Gradient(bias5.InputParameter(), deltaNext, bias5.Gradient());
+    slice_idx += bias5.OutputParameter().n_slices;
+    
     /*base5.Gradient(base5.InputParameter(), delta.
         slices(base3.OutputParameter().n_slices, base5.OutputParameter().n_slices - 1),
          base5.Gradient());*/
 
+    deltaNext = delta.slices(slice_idx, slice_idx + biasPool.OutputParameter().n_slices - 1);
+    std::cout << "gradient, reached here, deltaNext.size = " << arma::size(deltaNext) << std::endl;
     convPool.Gradient(convPool.InputParameter(), biasPool.Delta(), convPool.Gradient());
-    biasPool.Gradient(biasPool.InputParameter(), delta.
-        slices(bias5.OutputParameter().n_slices, delta.n_slices - 1), biasPool.Gradient());
+    std::cout << "gradient, reached here" << std::endl;
+    biasPool.Gradient(biasPool.InputParameter(), deltaNext, biasPool.Gradient());
+    std::cout << "gradient, reached here" << std::endl;
+    slice_idx += biasPool.OutputParameter().n_slices;
+    
     /*basePool.Gradient(basePool.InputParameter(), delta.
         slices(base5.OutputParameter().n_slices, delta.n_slices - 1),
          basePool.Gradient());*/
+    std::cout << "inception gradient end.." << std::endl;
   }
   /*
   //! visual of subnetwork
@@ -339,10 +384,10 @@ class InceptionLayer
               pool3, convPool, biasPool, basePool);
   */
 
-  //! Get the delta.
-  OutputDataType const& Delta() const { return delta; }
-  //! Modify the delta.
-  OutputDataType& Delta() { return delta; }
+  //! Get the weights.
+  OutputDataType const& Weights() const { return weights; }
+  //! Modify the weights.
+  OutputDataType& Weights() { return weights; }
 
   //! Get the input parameter.
   InputDataType const& InputParameter() const { return inputParameter; }
@@ -354,11 +399,32 @@ class InceptionLayer
   //! Modify the output parameter.
   OutputDataType& OutputParameter() { return outputParameter; }
 
+  //! Get the delta.
+  OutputDataType const& Delta() const { return delta; }
+  //! Modify the delta.
+  OutputDataType& Delta() { return delta; }
+
+  //! Get the gradient.
+  OutputDataType const& Gradient() const { return gradient; }
+  //! Modify the gradient.
+  OutputDataType& Gradient() { return gradient; }
+
+  //! Locally-stored weight object.
+  OutputDataType weights;
+
+  //! Locally-stored delta object.
+  OutputDataType delta;
+
+  //! Locally-stored gradient object.
+  OutputDataType gradient;
+
   //! Locally-stored input parameter object.
   InputDataType inputParameter;
 
   //! Locally-stored output parameter object.
   OutputDataType outputParameter;
+
+
 }; // class InceptionLayer
 
 } // namespace ann
