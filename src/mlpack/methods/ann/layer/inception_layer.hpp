@@ -134,59 +134,7 @@ class InceptionLayer
       bias5(out5, bias),
       biasPool(poolProj, bias)
   {
-    /*
-      Example:
-      input : 28 x 28 x 192.
-      InceptionLayer<> in(192, 64, 96, 128, 16,  32,  32);
-
-      conv1: 28 x 28 x 64
-
-      proj3: 28 x 28 x 96
-      conv3: 26 x 26 x 128
-
-      proj5: 28 x 28 x 16
-      conv5: 24 x 24 x 32
-
-      pool3: 8 x 8 x 192 
-      convPool: 8 x 8 x 32
-    */
-    /*
-    set up all the layers.
-      1x1 layer
-  conv1(inMaps, out1, 1, 1);
-  if(bias != 0)
-  BiasLayer<> bias1(out1, bias);
-  BaseLayer2D<RectifierFunction> base1;
-  
-  1x1 followed by 3x3 convolution
-  ConvLayer<> proj3(inMaps, projSize3, 1, 1);
-  if(bias != 0)
-    BiasLayer<> biasProj3(projSize3, bias);
- BaseLayer2D<RectifierFunction> baseProj3;
-
-  ConvLayer<> conv3(projSize3, out3, 3, 3);
-  if(bias != 0)
-   BiasLayer<> bias3(out3, bias);
-  BaseLayer2D<RectifierFunction> base3;
-
-  1x1 followd by 5x5 convolution
-  ConvLayer<> proj5(inMaps, projSize5, 1, 1);
-  if(bias != 0)
-    BiasLayer<> biasProj5(projSize5, bias);
-  BaseLayer2D<RectifierFunction> baseProj5;
-  ConvLayer<> conv5(projSize5, out5, 5, 5);
-  if(bias != 0)
-    BiasLayer<> bias5(out5, bias);
-  BaseLayer2D<RectifierFunction> base5;
-
-  3x3 pooling follwed by 1x1 convolution
-  PoolingLayer<MaxPooling> pool3(3);
-  ConvLayer<> convPool(inMaps, poolProj, 1, 1);
-  if(bias != 0)
-    BiasLayer<> biasPool(poolProj, bias);
-  BaseLayer2D<RectifierFunction> basePool;
-*/
-  std::cout << "Constructor called success" << std::endl;
+    //std::cout << "Constructor called success" << std::endl;
   }
 
   // perform forward passes for all the layers.
@@ -194,7 +142,7 @@ class InceptionLayer
   template<typename eT>
   void Forward(const arma::Cube<eT>& input, arma::Cube<eT>& output)
   {
-    std::cout << "inception forward pass start.." << std::endl;
+    //std::cout << "inception forward pass start.." << std::endl;
     // Example input 28 x 28 x 192.
     conv1.InputParameter() = input;
     //this->InputParameter() = input;
@@ -230,7 +178,7 @@ class InceptionLayer
  
     pool3.InputParameter() = input;
     pool3.Forward(input, pool3.OutputParameter());
-    convPool.InputParameter() = pool3.OutputParameter();
+    Pad(pool3.OutputParameter(), 1, convPool.InputParameter());
     convPool.Forward(pool3.OutputParameter(), convPool.OutputParameter());
     biasPool.Forward(convPool.OutputParameter(), biasPool.OutputParameter());
     basePool.InputParameter() = biasPool.OutputParameter();
@@ -248,7 +196,7 @@ class InceptionLayer
                   base1.OutputParameter(), base3.OutputParameter() ), 
                   base5.OutputParameter() ), basePool.OutputParameter());
 
-  std::cout << "inception forward pass end.." << std::endl;
+  //std::cout << "inception forward pass end.." << std::endl;
   }
 
   //! perform backward passes for all the layers.
@@ -261,7 +209,7 @@ class InceptionLayer
   template<typename eT>
   void Backward(arma::Cube<eT>&, arma::Cube<eT>& error, arma::Cube<eT>& )
   {
-    std::cout << "inception backward pass start.." << std::endl;
+    //std::cout << "inception backward pass start.." << std::endl;
     //std::cout << "error.size = " << arma::size(error) << std::endl;
     InputDataType in;
     size_t slice_idx = 0;
@@ -312,19 +260,19 @@ class InceptionLayer
     biasPool.Backward(biasPool.OutputParameter(), basePool.Delta(), biasPool.Delta());
     convPool.Backward(convPool.OutputParameter(), biasPool.Delta(), convPool.Delta());
     pool3.Backward(pool3.OutputParameter(), convPool.Delta(), pool3.Delta());
-    std::cout << "inception backward pass end.." << std::endl;
+    //std::cout << "inception backward pass end.." << std::endl;
 
   }
 
   template<typename eT>
   void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>&)
   {
-    std::cout << "inception gradient start.." << std::endl;
+/*    std::cout << "inception gradient start.." << std::endl;
     std::cout << "delta.size = " << arma::size(delta) << std::endl;
     std::cout << "bias1.size = " << arma::size(bias1.OutputParameter()) << std::endl;
     std::cout << "bias3.size = " << arma::size(bias3.OutputParameter()) << std::endl;
     std::cout << "bias5.size = " << arma::size(bias5.OutputParameter()) << std::endl;
-    std::cout << "biasPool.size = " << arma::size(biasPool.OutputParameter()) << std::endl;
+    std::cout << "biasPool.size = " << arma::size(biasPool.OutputParameter()) << std::endl;*/
     //Delta(delta);
     size_t slice_idx = 0;
     arma::cube deltaNext = delta.slices(slice_idx, slice_idx + bias1.OutputParameter().n_slices - 1);
@@ -353,6 +301,8 @@ class InceptionLayer
     biasProj5.Gradient(biasProj5.InputParameter(), conv5.Delta(), biasProj5.Gradient());
     //baseProj5.Gradient(baseProj5.InputParameter(), conv5.Delta(), baseProj5.Gradient());
     conv5.Gradient(conv5.InputParameter(), bias5.Delta(), conv5.Gradient());
+    std::cout << arma::size(conv5.InputParameter()) << std::endl;
+    std::cout << arma::size(bias5.Delta()) << std::endl;
     bias5.Gradient(bias5.InputParameter(), deltaNext, bias5.Gradient());
     slice_idx += bias5.OutputParameter().n_slices;
     
@@ -361,17 +311,35 @@ class InceptionLayer
          base5.Gradient());*/
 
     deltaNext = delta.slices(slice_idx, slice_idx + biasPool.OutputParameter().n_slices - 1);
-    std::cout << "gradient, reached here, deltaNext.size = " << arma::size(deltaNext) << std::endl;
+    std::cout << arma::size(convPool.InputParameter()) << std::endl;
+    std::cout << arma::size(biasPool.Delta()) << std::endl;
     convPool.Gradient(convPool.InputParameter(), biasPool.Delta(), convPool.Gradient());
-    std::cout << "gradient, reached here" << std::endl;
     biasPool.Gradient(biasPool.InputParameter(), deltaNext, biasPool.Gradient());
-    std::cout << "gradient, reached here" << std::endl;
     slice_idx += biasPool.OutputParameter().n_slices;
     
     /*basePool.Gradient(basePool.InputParameter(), delta.
         slices(base5.OutputParameter().n_slices, delta.n_slices - 1),
          basePool.Gradient());*/
-    std::cout << "inception gradient end.." << std::endl;
+    //std::cout << "inception gradient end.." << std::endl;
+  }
+
+  template<typename eT>
+  void Pad(arma::Mat<eT>& input, size_t padSize, arma::Mat<eT>& output)
+  {
+    if (output.n_rows != input.n_rows + padSize * 2 ||
+        output.n_cols != input.n_cols + padSize * 2)
+      output = arma::zeros(input.n_rows + padSize * 2, input.n_cols + padSize * 2);  
+    output.submat(padSize, padSize, 
+          padSize + input.n_rows - 1,
+          padSize + input.n_cols - 1) = input;
+  }
+
+  void Pad(OutputDataType& input, size_t padSize, InputDataType& output)
+  {
+    output = arma::zeros(input.n_rows + padSize * 2, input.n_cols + padSize * 2, input.n_slices);
+    for (size_t i = 0; i < input.n_slices; ++i)
+      Pad<double>(input.slice(i), padSize, output.slice(i));
+    
   }
   /*
   //! visual of subnetwork
