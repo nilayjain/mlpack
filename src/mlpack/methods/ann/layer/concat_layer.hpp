@@ -42,8 +42,65 @@ class ConcatLayer
   template<typename eT>
   void Forward(const arma::Cube<eT>& , arma::Cube<eT>& output)
   {
-    
+    ForwardTail(layers, output);
   }
+
+  template<size_t I = 0, typename DataType, typename... Tp>
+  typename std::enable_if<I == sizeof...(Tp), void>::type
+  void ForwardTail(std::tuple<Tp...>& layers, DataType& output)
+  {
+    /* Nothing to do. */
+  }
+
+  template<size_t I = 0, typename DataType, typename... Tp>
+  typename std::enable_if<I < sizeof...(Tp), void>::type
+  void ForwardTail(std::tuple<Tp...>& layers, DataType& output)
+  {
+    output = arma::join_slices(output, std::get<I>(layers).OutputParameter());
+    ForwardTail<I + 1, DataType, Tp...>(layers, output);
+  }
+
+  template<typename eT>
+  void Backward(arma::Cube<eT>&, arma::Cube<eT>& error, arma::Cube<eT>& )
+  {
+    size_t slice_idx = 0;
+    BackwardTail(layers, error, slice_idx);
+  }
+
+  template<size_t I = 0, typename DataType, typename... Tp>
+  typename std::enable_if<I == sizeof...(Tp), void>::type
+  BackwardTail(std::tuple<Tp...>& layers, const DataType& error,  size_t slice_idx)
+  {
+    /* Nothing to do. */
+  }
+
+  template<size_t I = 0, typename DataType, typename... Tp>
+  typename std::enable_if<I < sizeof...(Tp), void>::type
+  BackwardTail(std::tuple<Tp...>& layers, const DataType& error,  size_t slice_idx)
+  {
+    DataType subError = error.slices(slice_idx, 
+        slice_idx + std::get<I>(layers).OutputParameter().n_slices - 1);
+    slice_idx += std::get<I>(layers).OutputParameter().n_slices;
+    std::get<I>(layers).Backward(std::get<I>(layers).OutputParameter(), subError, 
+          std::get<I>(layers).Delta());
+    BackwardTail<I + 1, DataType, Tp...>(layers, error, slice_idx);
+  }
+
+  template<typename eT>
+  void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>&)
+  {
+    size_t slice_idx = 0;
+    GradientTail(layers, delta, slice_idx);
+  }
+
+  template<size_t I = 0, typename DataType, typename... Tp>
+  typename std::enable_if<I < sizeof...(Tp), void>::type
+  GradientTail(std::tuple<Tp...>& layers, const DataType& error,  size_t slice_idx)
+  {
+    DataType deltaNext = delta.slices(slice_idx,
+        slice_idx + )
+  }
+    
  private:
 
   //! Get the weights.
