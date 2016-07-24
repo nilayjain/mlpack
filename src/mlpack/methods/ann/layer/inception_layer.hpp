@@ -149,6 +149,10 @@ class InceptionLayer
     //! Forward pass for 1x1 conv path.
 
     conv1.Forward(conv1.InputParameter(), conv1.OutputParameter());
+    //std::cout << "in inception layer" << std::endl;
+    //std::cout << "___________________" << std::endl;
+    //conv1.OutputParameter().print();
+    //std::cout << "___________________" << std::endl;
     // no InputParameter() update for bias term.
     bias1.Forward(conv1.OutputParameter(), bias1.OutputParameter());
     base1.InputParameter() = bias1.OutputParameter();
@@ -301,8 +305,8 @@ class InceptionLayer
     biasProj5.Gradient(biasProj5.InputParameter(), conv5.Delta(), biasProj5.Gradient());
     //baseProj5.Gradient(baseProj5.InputParameter(), conv5.Delta(), baseProj5.Gradient());
     conv5.Gradient(conv5.InputParameter(), bias5.Delta(), conv5.Gradient());
-    std::cout << arma::size(conv5.InputParameter()) << std::endl;
-    std::cout << arma::size(bias5.Delta()) << std::endl;
+    //std::cout << arma::size(conv5.InputParameter()) << std::endl;
+    //std::cout << arma::size(bias5.Delta()) << std::endl;
     bias5.Gradient(bias5.InputParameter(), deltaNext, bias5.Gradient());
     slice_idx += bias5.OutputParameter().n_slices;
     
@@ -311,8 +315,8 @@ class InceptionLayer
          base5.Gradient());*/
 
     deltaNext = delta.slices(slice_idx, slice_idx + biasPool.OutputParameter().n_slices - 1);
-    std::cout << arma::size(convPool.InputParameter()) << std::endl;
-    std::cout << arma::size(biasPool.Delta()) << std::endl;
+    //std::cout << arma::size(convPool.InputParameter()) << std::endl;
+    //std::cout << arma::size(biasPool.Delta()) << std::endl;
     convPool.Gradient(convPool.InputParameter(), biasPool.Delta(), convPool.Gradient());
     biasPool.Gradient(biasPool.InputParameter(), deltaNext, biasPool.Gradient());
     slice_idx += biasPool.OutputParameter().n_slices;

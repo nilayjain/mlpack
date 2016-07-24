@@ -40,8 +40,8 @@ class PoolingLayer
    * @param kSize Size of the pooling window.
    * @param pooling The pooling strategy.
    */
-  PoolingLayer(const size_t kSize, PoolingRule pooling = PoolingRule(),
-                const size_t stride = 1) :
+  PoolingLayer(const size_t kSize,  const size_t stride = 1,
+              PoolingRule pooling = PoolingRule()) :
       kSize(kSize), pooling(pooling), stride(stride)
   {
     // Nothing to do here.
@@ -170,16 +170,16 @@ class PoolingLayer
   template<typename eT>
   void Pooling(const arma::Mat<eT>& input, arma::Mat<eT>& output)
   {
+    const size_t rStep = kSize;
+    const size_t cStep = kSize;
 
-    const size_t rStep = stride;
-    const size_t cStep = stride;
-
-    for (size_t j = 0; j < input.n_cols; j += cStep)
+    for (size_t j = 0, colidx = 0; j < output.n_cols; ++j, colidx += stride)
     {
-      for (size_t i = 0; i < input.n_rows; i += rStep)
+      for (size_t i = 0, rowidx = 0; i < output.n_rows; ++i, rowidx += stride)
       {
-        output(i / rStep, j / cStep) += pooling.Pooling(
-            input(arma::span(i, i + rStep - 1), arma::span(j, j + cStep - 1)));
+        output(i, j) += pooling.Pooling(
+            input(arma::span(rowidx, rowidx + rStep - 1), 
+              arma::span(colidx, colidx + cStep - 1)));
       }
     }
   }
