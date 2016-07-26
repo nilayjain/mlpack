@@ -27,12 +27,14 @@ namespace ann /** Artificial Neural Network. */ {
 /**
  * @tparam JoinLayers Contains all layer modules that need be concatenated.
  */
-template <typename JoinLayers>
+template <typename JoinLayers,
+          typename InputDataType = arma::cube,
+          typename OutputDataType = arma::cube>
 class ConcatLayer
 {
  public:
   ConcatLayer(JoinLayers &&layers,
-              size_t numLayers) :
+              const size_t numLayers) :
   layers(std::forward<JoinLayers>(layers)),
   numLayers(numLayers)
   {
@@ -47,14 +49,14 @@ class ConcatLayer
 
   template<size_t I = 0, typename DataType, typename... Tp>
   typename std::enable_if<I == sizeof...(Tp), void>::type
-  void ForwardTail(std::tuple<Tp...>& layers, DataType& output)
+  ForwardTail(std::tuple<Tp...>& layers, DataType& output)
   {
     /* Nothing to do. */
   }
 
   template<size_t I = 0, typename DataType, typename... Tp>
   typename std::enable_if<I < sizeof...(Tp), void>::type
-  void ForwardTail(std::tuple<Tp...>& layers, DataType& output)
+  ForwardTail(std::tuple<Tp...>& layers, DataType& output)
   {
     output = arma::join_slices(output, std::get<I>(layers).OutputParameter());
     ForwardTail<I + 1, DataType, Tp...>(layers, output);
@@ -78,15 +80,15 @@ class ConcatLayer
   typename std::enable_if<I < sizeof...(Tp), void>::type
   BackwardTail(std::tuple<Tp...>& layers, const DataType& error,  size_t slice_idx)
   {
-    DataType subError = error.slices(slice_idx, 
+    DataType subError = error.slices(slice_idx,
         slice_idx + std::get<I>(layers).OutputParameter().n_slices - 1);
     slice_idx += std::get<I>(layers).OutputParameter().n_slices;
-    std::get<I>(layers).Backward(std::get<I>(layers).OutputParameter(), subError, 
+    std::get<I>(layers).Backward(std::get<I>(layers).OutputParameter(), subError,
           std::get<I>(layers).Delta());
     BackwardTail<I + 1, DataType, Tp...>(layers, error, slice_idx);
   }
 
-  template<typename eT>
+/*  template<typename eT>
   void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>&)
   {
     size_t slice_idx = 0;
@@ -99,8 +101,8 @@ class ConcatLayer
   {
     DataType deltaNext = delta.slices(slice_idx,
         slice_idx + )
-  }
-    
+  }*/
+
  private:
 
   //! Get the weights.

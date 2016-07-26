@@ -16,6 +16,7 @@
 #include <mlpack/methods/ann/layer/linear_layer.hpp>
 #include <mlpack/methods/ann/layer/base_layer.hpp>
 #include <mlpack/methods/ann/layer/inception_layer.hpp>
+#include <mlpack/methods/ann/layer/concat_layer.hpp> 
 
 #include <mlpack/methods/ann/performance_functions/mse_function.hpp>
 #include <mlpack/core/optimizers/rmsprop/rmsprop.hpp>
@@ -81,11 +82,27 @@ void ForwardPassTest(arma::cube& input, arma::cube& output, InceptionLayer<>& in
 {
   arma::cube inceptionLayerOutput;
   in.Forward(input, inceptionLayerOutput);
-  inceptionLayerOutput.print();
   Test(inceptionLayerOutput, output);
 }
 
+void BackwardPassTest(arma::cube& error, InceptionLayer<>& in)
+{
+  arma::cube d1, d2; //dummy cubes.
+  in.Backward(d1, error, d2);
+  arma::cube output = arma::ones(5, 5, 1);
+  Test(in.base1.Delta(), output);
+  Test(in.base3.Delta(), output);
+  Test(in.base5.Delta(), output); 
+  Test(in.bias1.Delta(), output); // since bias is zero.
+  Test(in.bias3.Delta(), output);
+  output = arma::ones(5, 5, 4);
+  Test(in.conv3.Delta(), output);
+}
 
+void GradientUpdateTest(arma::cube& delta, InceptionLayer<>& in)
+{
+
+}
 void SmallNetworkTest()
 {
   arma::vec a = arma::linspace<arma::vec>(1, 25, 25);
@@ -142,56 +159,76 @@ void SmallNetworkTest()
   ForwardPassTest(input, output, in);
 
   //! testing for backward pass.
-  arma::cube error = arma::zeros(5, 5, 4);
-  arma::cube d1, d2; //dummy cubes.
-  in.Backward(d1, error, d2);
-  in.conv1.Delta().print();
-  in.conv3.Delta().print();
-  in.proj3.Delta().print();
+  arma::cube error = arma::ones(5, 5, 4);
+  BackwardPassTest(error, in);
 
-  arma::cube delta = arma::ones(5,5,4);
-  delta.fill(2.0);
-  in.Gradient(d1, delta, d2);
+  arma::cube delta = arma::randu(5,5,4);
+  //delta.fill(2.0);
+  arma::cube d1, d2;
+
+  //! Need to first check the gradient function in convLayer.
+  //in.Gradient(d1, delta, d2);
 
   //in.bias1.InputParameter().print();
   //std::cout << "____________________" << std::endl;
   //in.bias1.Delta().print();
-  std::cout << "____________________" << std::endl;
-  in.bias1.Gradient().print();
+  /*std::cout << "____________________" << std::endl;
+  in.bias1.Gradient().print();*/
   /*in.conv1.Gradient().print();
   in.conv3.Gradient().print();*/
 }
-void ConvLayerTest()
+
+void ConcatLayerTest()
 {
-  arma::vec a = arma::linspace<arma::vec>(1, 25, 25);
-  arma::cube input(5, 5, 4);
-  for (size_t i = 0; i < input.n_slices; ++i)
-  {
-    int vec_idx = 0, row_idx = 0;
-    for (size_t j = 0; j < input.n_rows; ++j)
-    {
-      input.slice(i).row(j) = a.subvec(vec_idx, vec_idx + 4).t();
-      vec_idx += 5;
-    }
-  }
-  ConvLayer<> conv3(4, 1, 3, 3, 1, 1, 1, 1);
-  arma::mat id3 = arma::zeros<arma::mat>(3, 3);
-  id3(1, 1) = 1;  
-  arma::cube conv3_w(3, 3, 4 * 1);
-  for (size_t i = 0; i < conv3_w.n_slices; ++i) 
-    conv3_w.slice(i) = id3;
-  conv3.Weights() = conv3_w;
+  arma::cube input(5, 5, 3, arma::fill::ones);
+  ConvLayer<> convLayer0(3, 2, 1, 1);
+  ConvLayer<> convLayer1(3, 3, 1, 1);
+  auto JoinLayers = std::tie(convLayer0, convLayer1);
+  size_t numLayers = 2;
+  ConcatLayer<decltype(JoinLayers), arma::cube, arma::cube> 
+      concatLayer0(std::move(JoinLayers), numLayers);
+
+  arma::mat id = arma::ones(1, 1);
+
+  arma::cube convLayer0_w(1, 1, 3 * 2);
+  for (size_t i = 0; i < convLayer0_w.n_slices; ++i)
+    convLayer0_w.slice(i) = id;
+  convLayer0.Weights() = convLayer0_w;
+
+  arma::cube convLayer1_w(1, 1, 3 * 3);
+  id(0, 0) = 2;
+  for (size_t i = 0; i < convLayer1_w.n_slices; ++i)
+    convLayer1_w.slice(i) = id;
+  convLayer1.Weights() = convLayer1_w;
+
+  arma::cube d1, d2; // dummy cubes.
+  arma::cube output;
+
+  //! Forward pass test for ConcatLayer...
+  convLayer0.InputParameter() = convLayer1.InputParameter() = input;
+  convLayer0.Forward(convLayer0.InputParameter(), convLayer0.OutputParameter());
+  convLayer1.Forward(convLayer1.InputParameter(), convLayer1.OutputParameter());
+  concatLayer0.Forward(d1, output);
+  arma::cube desiredOutput = arma::join_slices(convLayer0.OutputParameter(), 
+                              convLayer1.OutputParameter());
+  Test(output, desiredOutput);
   
-  arma::cube output(5, 5, 1);
-  output.slice(0) = input.slice(0) * 4;
-  arma::cube convOutput;
-  conv3.Forward(input, convOutput);
-  Test(convOutput, output);
+  //! Backward pass test for ConcatLayer.
+  arma::cube error = arma::ones(5, 5, 5);
+  concatLayer0.Backward(d1, error, d2);
+  arma::cube backout0 = arma::ones(5, 5, 3) * 2;
+  Test(convLayer0.Delta(), backout0);
+  arma::cube backout1 = arma::ones(5, 5, 3) * 6;
+  Test(convLayer1.Delta(), backout1);
+
+  //! todo: Gradient update test for ConcatLayer.
 }
+
 BOOST_AUTO_TEST_CASE(SampleInceptionLayerTest)
 {
   //BuildSampleNetwork();
-  //SmallNetworkTest();
-  ConvLayerTest();
+  SmallNetworkTest();
+  //ConvLayerTest();
+  ConcatLayerTest();
 }
 BOOST_AUTO_TEST_SUITE_END();

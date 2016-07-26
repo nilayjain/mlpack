@@ -14,6 +14,7 @@
 #include <mlpack/methods/ann/layer/one_hot_layer.hpp>
 #include <mlpack/methods/ann/layer/conv_layer.hpp>
 #include <mlpack/methods/ann/layer/pooling_layer.hpp>
+#include <mlpack/methods/ann/pooling_rules/max_pooling.hpp>
 #include <mlpack/methods/ann/layer/softmax_layer.hpp>
 #include <mlpack/methods/ann/layer/bias_layer.hpp>
 #include <mlpack/methods/ann/layer/linear_layer.hpp>
@@ -182,7 +183,7 @@ class InceptionLayer
  
     pool3.InputParameter() = input;
     pool3.Forward(input, pool3.OutputParameter());
-    Pad(pool3.OutputParameter(), 1, convPool.InputParameter());
+    Pad(pool3.OutputParameter(), 1, 1, convPool.InputParameter());
     convPool.Forward(pool3.OutputParameter(), convPool.OutputParameter());
     biasPool.Forward(convPool.OutputParameter(), biasPool.OutputParameter());
     basePool.InputParameter() = biasPool.OutputParameter();
@@ -328,22 +329,22 @@ class InceptionLayer
   }
 
   template<typename eT>
-  void Pad(arma::Mat<eT>& input, size_t padSize, arma::Mat<eT>& output)
+  void Pad(const arma::Mat<eT>& input, size_t wPad, size_t hPad, arma::Mat<eT>& output)
   {
-    if (output.n_rows != input.n_rows + padSize * 2 ||
-        output.n_cols != input.n_cols + padSize * 2)
-      output = arma::zeros(input.n_rows + padSize * 2, input.n_cols + padSize * 2);  
-    output.submat(padSize, padSize, 
-          padSize + input.n_rows - 1,
-          padSize + input.n_cols - 1) = input;
+    if (output.n_rows != input.n_rows + wPad * 2 ||
+        output.n_cols != input.n_cols + hPad * 2)
+      output = arma::zeros(input.n_rows + wPad * 2, input.n_cols + hPad * 2);  
+    output.submat(wPad, hPad, 
+          wPad + input.n_rows - 1,
+          hPad + input.n_cols - 1) = input;
   }
 
-  void Pad(OutputDataType& input, size_t padSize, InputDataType& output)
+  template<typename eT>
+  void Pad(const arma::Cube<eT>& input, size_t wPad, size_t hPad, arma::Cube<eT>& output)
   {
-    output = arma::zeros(input.n_rows + padSize * 2, input.n_cols + padSize * 2, input.n_slices);
+    output = arma::zeros(input.n_rows + wPad * 2, input.n_cols + hPad * 2, input.n_slices);
     for (size_t i = 0; i < input.n_slices; ++i)
-      Pad<double>(input.slice(i), padSize, output.slice(i));
-    
+      Pad<double>(input.slice(i), wPad, hPad, output.slice(i));
   }
   /*
   //! visual of subnetwork

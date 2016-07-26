@@ -10,7 +10,7 @@
 
 #include <mlpack/core.hpp>
 #include <mlpack/methods/ann/pooling_rules/mean_pooling.hpp>
-#include <mlpack/methods/ann/pooling_rules/max_pooling.hpp> 
+
 #include <mlpack/methods/ann/layer/layer_traits.hpp>
 
 namespace mlpack {
@@ -40,9 +40,9 @@ class PoolingLayer
    * @param kSize Size of the pooling window.
    * @param pooling The pooling strategy.
    */
-  PoolingLayer(const size_t kSize,  const size_t stride = 1,
+  PoolingLayer(const size_t kSize, const size_t stride = 1,
               PoolingRule pooling = PoolingRule()) :
-      kSize(kSize), pooling(pooling), stride(stride)
+      kSize(kSize), stride(stride), pooling(pooling)
   {
     // Nothing to do here.
   }
