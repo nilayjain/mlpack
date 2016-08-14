@@ -206,7 +206,7 @@ class SubnetLayer
   size_t numLayers;
 
   //! Instantiated convolutional neural network.
-  LayerType layers;
+  LayerTypes layers;
 
   //! Locally-stored weight object.
   OutputDataType weights;

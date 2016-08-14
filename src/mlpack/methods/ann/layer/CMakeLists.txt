@@ -12,6 +12,9 @@ set(SOURCES
   leaky_relu_layer.hpp
   linear_layer.hpp
   conv_layer.hpp
+  concat_layer.hpp
+  subnet_layer.hpp
+  inception_layer.hpp
   pooling_layer.hpp
   recurrent_layer.hpp
   lstm_layer.hpp

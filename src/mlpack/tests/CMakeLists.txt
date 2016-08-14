@@ -10,6 +10,7 @@ add_executable(mlpack_test
   binarize_test.cpp
   cf_test.cpp
   cli_test.cpp
+  concat_layer_test.cpp
   convolution_test.cpp
   convolutional_network_test.cpp
   conv_layer_test.cpp
@@ -25,6 +26,7 @@ add_executable(mlpack_test
   hoeffding_tree_test.cpp
   ind2sub_test.cpp
   init_rules_test.cpp
+  inception_layer_test.cpp
   kernel_test.cpp
   kernel_pca_test.cpp
   kernel_traits_test.cpp
@@ -75,6 +77,7 @@ add_executable(mlpack_test
   sparse_autoencoder_test.cpp
   sparse_coding_test.cpp
   split_data_test.cpp
+  subnet_layer_test.cpp
   termination_policy_test.cpp
   tree_test.cpp
   tree_traits_test.cpp

@@ -233,6 +233,13 @@ LayerWeights(InitializationRuleType& initializeRule,
              size_t offset,
              P& output);
 
+template<typename eT>
+void Pad(const arma::Mat<eT>& input, size_t wPad, 
+          size_t hPad, arma::Mat<eT>& output);
+
+template<typename eT>
+void Pad(const arma::Cube<eT>& input, size_t wPad, 
+        size_t hPad, arma::Cube<eT>& output);
 } // namespace ann
 } // namespace mlpack
 
@@ -240,3 +247,4 @@ LayerWeights(InitializationRuleType& initializeRule,
 #include "network_util_impl.hpp"
 
 #endif
+
