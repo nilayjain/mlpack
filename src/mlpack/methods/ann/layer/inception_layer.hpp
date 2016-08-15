@@ -44,16 +44,8 @@ template<typename InputDataType = arma::cube,
          typename OutputDataType = arma::cube>
 class InceptionLayer
 {
+
  public:
-  //! Locally-stored number of input maps.
-  size_t inMaps;
-
-  //! bias value
-  size_t bias;
-
-  //! Locally-stored outMaps of the constituent layers of inception layer.
-  size_t out1, out3, out5, projSize3, projSize5, poolProj;
-
   //! Locally-stored convLayers.
   ConvLayer<> conv1, proj3, conv3, proj5, conv5, convPool;
 
@@ -261,6 +253,16 @@ class InceptionLayer
   OutputDataType const& Gradient() const { return gradient; }
   //! Modify the gradient.
   OutputDataType& Gradient() { return gradient; }
+
+ private:
+  //! Locally-stored number of input maps.
+  size_t inMaps;
+
+  //! bias value
+  size_t bias;
+
+  //! Locally-stored outMaps of the constituent layers of inception layer.
+  size_t out1, out3, out5, projSize3, projSize5, poolProj;
 
   //! Locally-stored weight object.
   OutputDataType weights;
