@@ -13,6 +13,7 @@ set(SOURCES
   linear_layer.hpp
   conv_layer.hpp
   concat_layer.hpp
+  connect_layer.hpp
   subnet_layer.hpp
   inception_layer.hpp
   pooling_layer.hpp

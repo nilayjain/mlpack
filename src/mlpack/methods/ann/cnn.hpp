@@ -212,40 +212,6 @@ class CNN
   template<typename Archive>
   void Serialize(Archive& ar, const unsigned int /* version */);
 
- private:
-  /**
-   * Reset the network by setting the layer status.
-   */
-  template<size_t I = 0, typename... Tp>
-  typename std::enable_if<I == sizeof...(Tp), void>::type
-  ResetParameter(std::tuple<Tp...>& /* unused */) { /* Nothing to do here */ }
-
-  template<size_t I = 0, typename... Tp>
-  typename std::enable_if<I < sizeof...(Tp), void>::type
-  ResetParameter(std::tuple<Tp...>& network)
-  {
-    ResetDeterministic(std::get<I>(network));
-    ResetParameter<I + 1, Tp...>(network);
-  }
-
-  /**
-   * Reset the layer status by setting the current deterministic parameter
-   * through all layer that implement the Deterministic function.
-   */
-  template<typename T>
-  typename std::enable_if<
-      HasDeterministicCheck<T, bool&(T::*)(void)>::value, void>::type
-  ResetDeterministic(T& layer)
-  {
-    layer.Deterministic() = deterministic;
-  }
-
-  template<typename T>
-  typename std::enable_if<
-      !HasDeterministicCheck<T, bool&(T::*)(void)>::value, void>::type
-  ResetDeterministic(T& /* unused */) { /* Nothing to do here */
-  }
-
   /**
    * Run a single iteration of the feed forward algorithm, using the given
    * input and target vector, store the calculated error into the error
@@ -300,24 +266,7 @@ class CNN
     LinkParameter<I + 1, Tp...>(network);
   }
 
-  /*
-   * Calculate the output error and update the overall error.
-   */
-  template<typename DataType, typename ErrorType, typename... Tp>
-  double OutputError(const DataType& target,
-                     ErrorType& error,
-                     const std::tuple<Tp...>& network)
-  {
-    // Calculate and store the output error.
-    outputLayer.CalculateError(
-        std::get<sizeof...(Tp) - 1>(network).OutputParameter(), target, error);
-
-    // Masures the network's performance with the specified performance
-    // function.
-    return performanceFunc.Error(network, target, error);
-  }
-
-  /**
+/**
    * Run a single iteration of the feed backward algorithm, using the given
    * error of the output layer. Note that we iterate backward through the
    * layer modules.
@@ -392,6 +341,62 @@ class CNN
     /* Nothing to do here */
   }
 
+  arma::mat const& Error() const { return error; }
+  //! Instantiated convolutional neural network.
+
+  LayerTypes const& Layers() const { return network; }
+ 
+ private:
+  /**
+   * Reset the network by setting the layer status.
+   */
+  template<size_t I = 0, typename... Tp>
+  typename std::enable_if<I == sizeof...(Tp), void>::type
+  ResetParameter(std::tuple<Tp...>& /* unused */) { /* Nothing to do here */ }
+
+  template<size_t I = 0, typename... Tp>
+  typename std::enable_if<I < sizeof...(Tp), void>::type
+  ResetParameter(std::tuple<Tp...>& network)
+  {
+    ResetDeterministic(std::get<I>(network));
+    ResetParameter<I + 1, Tp...>(network);
+  }
+
+  /**
+   * Reset the layer status by setting the current deterministic parameter
+   * through all layer that implement the Deterministic function.
+   */
+  template<typename T>
+  typename std::enable_if<
+      HasDeterministicCheck<T, bool&(T::*)(void)>::value, void>::type
+  ResetDeterministic(T& layer)
+  {
+    layer.Deterministic() = deterministic;
+  }
+
+  template<typename T>
+  typename std::enable_if<
+      !HasDeterministicCheck<T, bool&(T::*)(void)>::value, void>::type
+  ResetDeterministic(T& /* unused */) { /* Nothing to do here */
+  }
+
+  /*
+   * Calculate the output error and update the overall error.
+   */
+  template<typename DataType, typename ErrorType, typename... Tp>
+  double OutputError(const DataType& target,
+                     ErrorType& error,
+                     const std::tuple<Tp...>& network)
+  {
+    // Calculate and store the output error.
+    outputLayer.CalculateError(
+        std::get<sizeof...(Tp) - 1>(network).OutputParameter(), target, error);
+
+    // Masures the network's performance with the specified performance
+    // function.
+    return performanceFunc.Error(network, target, error);
+  }
+  
   /*
    * Calculate and store the output activation.
    */
@@ -402,7 +407,7 @@ class CNN
     outputLayer.OutputClass(std::get<sizeof...(Tp) - 1>(
         network).OutputParameter(), output);
   }
-
+  
   //! Instantiated convolutional neural network.
   LayerTypes network;
 
