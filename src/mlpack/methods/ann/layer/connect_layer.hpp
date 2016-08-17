@@ -37,22 +37,22 @@ class ConnectLayer
   template<typename eT>
   void Forward(const arma::Cube<eT>& input, arma::Cube<eT>& )
   {
-    networkA.Forward<>(input, networkA.Layers());
-    networkB.Forward<>(input, networkB.Layers());
+    networkA.Forward(input, networkA.Layers());
+    networkB.Forward(input, networkB.Layers());
   }
 
   template<typename eT>
   void Backward(arma::Cube<eT>&, arma::Cube<eT>& error, arma::Cube<eT>& )
   {
-    networkA.Backward<>(networkA.error, networkA.Layers());
-    networkB.Backward<>(networkB.error, networkB.Layers());
+    networkA.Backward(networkA.error, networkA.Layers());
+    networkB.Backward(networkB.error, networkB.Layers());
   }
 
   template<typename eT>
   void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>&)
   {
-    networkA.UpdateGradients<>(networkA.Layers());
-    networkB.UpdateGradients<>(networkB.Layers());
+    networkA.UpdateGradients(networkA.Layers());
+    networkB.UpdateGradients(networkB.Layers());
   }
 
  private:

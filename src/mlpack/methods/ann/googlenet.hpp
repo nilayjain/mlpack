@@ -24,6 +24,7 @@
 #include <mlpack/methods/ann/layer/concat_layer.hpp> 
 #include <mlpack/methods/ann/layer/subnet_layer.hpp>
 #include <mlpack/methods/ann/layer/connect_layer.hpp>
+#include <mlpack/methods/ann/layer/dropout_layer.hpp>
 
 #include <mlpack/methods/ann/performance_functions/mse_function.hpp>
 #include <mlpack/core/optimizers/rmsprop/rmsprop.hpp>
@@ -42,13 +43,13 @@ class GoogleNet
   InceptionLayer<> inception3a, inception3b, inception4a, inception4b,
       inception4c, inception4d, inception4e, inception5a, inception5b;
   LinearMappingLayer<> linear1, linear2, linear3, linear4, linear5;
-  DropoutLayer<> drop1, drop2;
+  DropoutLayer<> drop1, drop2, drop3;
   SoftmaxLayer<> softmax1, softmax2, softmax3;
   PoolingLayer<MaxPooling> pool1, pool2, pool3, pool4;
   PoolingLayer<MeanPooling> pool5, pool6, pool7;
-  ConnectLayer<> connect1, connect2;
+  ConnectLayer connect1, connect2;
   OneHotLayer output1, output2, output3, output4, output5;
-  Googlenet() :
+  GoogleNet() :
     conv1(3, 64, 7, 7, 2, 2, 3, 3),
     pool1(3, 2),
     conv3(64, 192, 3, 3, 1, 1, 1, 1),
@@ -88,7 +89,7 @@ class GoogleNet
     CNN<decltype(main3), decltype(output1),
         RandomInitialization, MeanSquaredErrorFunction> mainNet3(main3, output1);
 
-    connect2 = ConnectLayer<>(mainNet3, auxNet2);
+    connect2 = ConnectLayer<decltype(mainNet3), decltype(auxNet2)>(mainNet3, auxNet2);
     
     auto aux1 = std::tie(pool6, conv4, linear2, drop2, linear3, softmax2);
     CNN<decltype(aux1), decltype(output2),
@@ -98,7 +99,7 @@ class GoogleNet
     CNN<decltype(main2), decltype(output4),
         RandomInitialization, MeanSquaredErrorFunction> mainNet2(main2, output4);    
 
-    connect1 = ConnectLayer<>(mainNet2, auxNet1);
+    connect1 = ConnectLayer<decltype(mainNet2), decltype(auxNet1)>(mainNet2, auxNet1);
 
     auto main1 = std::tie(conv1, pool1, conv3, pool2, inception3a, inception3b, 
                           pool3, inception4a, connect1);

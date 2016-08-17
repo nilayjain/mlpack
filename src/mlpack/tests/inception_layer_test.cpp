@@ -18,7 +18,7 @@
 #include <mlpack/methods/ann/layer/inception_layer.hpp>
 #include <mlpack/methods/ann/layer/concat_layer.hpp> 
 #include <mlpack/methods/ann/layer/subnet_layer.hpp>
-
+#include <mlpack/methods/ann/googlenet.hpp>
 #include <mlpack/methods/ann/performance_functions/mse_function.hpp>
 #include <mlpack/core/optimizers/rmsprop/rmsprop.hpp>
 
@@ -177,11 +177,15 @@ void SmallNetworkTest()
   GradientUpdateTest(delta, in);
 }
 
-
+void GoogleNetTest()
+{
+  GoogleNet g = GoogleNet();
+}
 
 BOOST_AUTO_TEST_CASE(SampleInceptionLayerTest)
 {
   //SampleInceptionNetwork();
   SmallNetworkTest();
+  GoogleNetTest();
 }
 BOOST_AUTO_TEST_SUITE_END();
