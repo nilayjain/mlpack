@@ -24,7 +24,8 @@ class OneHotLayer
   /**
    * Create the OneHotLayer object.
    */
-  OneHotLayer()
+  OneHotLayer(bool used = true) :
+    used(used)
   {
     // Nothing to do here.
   }
@@ -58,7 +59,7 @@ class OneHotLayer
     output = inputActivations;
     output.zeros();
 
-    arma::uword maxIndex = 0;
+    arma::uword maxIndex;
     inputActivations.max(maxIndex);
     output(maxIndex) = 1;
   }
@@ -71,6 +72,10 @@ class OneHotLayer
   {
     /* Nothing to do here */
   }
+
+ private:
+  //! do we want to infer this layer for final output.
+  bool used;
 }; // class OneHotLayer
 
 //! Layer traits for the one-hot class classification layer.
@@ -82,6 +87,7 @@ class LayerTraits<OneHotLayer>
   static const bool IsOutputLayer = true;
   static const bool IsBiasLayer = false;
   static const bool IsConnection = false;
+  static const bool IsConnectLayer = false;
 };
 
 } // namespace ann
@@ -89,3 +95,4 @@ class LayerTraits<OneHotLayer>
 
 
 #endif
+

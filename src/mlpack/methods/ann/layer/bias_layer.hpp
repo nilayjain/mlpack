@@ -177,6 +177,7 @@ class LayerTraits<BiasLayer<InputDataType, OutputDataType> >
   static const bool IsBiasLayer = true;
   static const bool IsLSTMLayer = false;
   static const bool IsConnection = true;
+  static const bool IsConnectLayer = false;
 };
 
 /**
@@ -201,3 +202,4 @@ using AdditionLayer = BiasLayer<InputDataType, OutputDataType>;
 } // namespace mlpack
 
 #endif
+

@@ -214,9 +214,11 @@ public:
   static const bool IsBiasLayer = false;
   static const bool IsLSTMLayer = false;
   static const bool IsConnection = true;
+  static const bool IsConnectLayer = false;
 };
 
 } // namespace ann
 } // namespace mlpack
 
 #endif
+

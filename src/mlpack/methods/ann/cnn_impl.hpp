@@ -198,8 +198,57 @@ void CNN<
 LayerTypes, OutputLayerType, InitializationRuleType, PerformanceFunction
 >::Predict(arma::cube& predictors, arma::mat& responses)
 {
-  deterministic = true;
+  ChooseLayer<>(predictors, responses, network);
+}
 
+template<typename LayerTypes,
+         typename OutputLayerType,
+         typename InitializationRuleType,
+         typename PerformanceFunction
+>
+template<
+    size_t Max,
+    typename... Tp
+>
+typename std::enable_if<
+    LayerTraits<typename std::remove_reference<
+    decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+CNN<
+LayerTypes, OutputLayerType, InitializationRuleType, PerformanceFunction
+>::ChooseLayer(arma::cube& predictors, 
+              arma::mat& responses, 
+              std::tuple<Tp...>& layer)
+{
+  ChooseLayer<std::tuple_size<std::get<Max>(layer).NetworkA.network>::value - 1,
+      std::get<Max>(layer).NetworkA.network>
+      (predictors, responses, std::get<Max>(layer).NetworkA.network);
+
+  ChooseLayer<std::tuple_size<std::get<Max>(layer).NetworkB.network>::value - 1,
+      std::get<Max>(decltype(layer)).NetworkB.network>
+      (predictors, responses, std::get<Max>(layer).NetworkB.network);
+}
+
+template<typename LayerTypes,
+         typename OutputLayerType,
+         typename InitializationRuleType,
+         typename PerformanceFunction
+>
+template<
+    size_t Max,
+    typename... Tp
+>
+typename std::enable_if<
+    !LayerTraits<typename std::remove_reference<
+    decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+CNN<
+LayerTypes, OutputLayerType, InitializationRuleType, PerformanceFunction
+>::ChooseLayer(arma::cube& predictors, 
+               arma::mat& responses,
+               std::tuple<Tp...>& layer)
+{
+  if (!std::get<Max>(layer).Used()) return;
+  
+  deterministic = true;
   arma::mat responsesTemp;
   ResetParameter(network);
   Forward(predictors.slices(0, sampleSize - 1), network);

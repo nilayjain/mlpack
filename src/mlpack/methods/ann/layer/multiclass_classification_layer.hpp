@@ -80,6 +80,7 @@ class LayerTraits<MulticlassClassificationLayer>
   static const bool IsOutputLayer = true;
   static const bool IsBiasLayer = false;
   static const bool IsConnection = false;
+  static const bool IsConnectLayer = false;
 };
 
 /***
@@ -91,3 +92,4 @@ using ClassificationLayer = MulticlassClassificationLayer;
 } // namespace mlpack
 
 #endif
+

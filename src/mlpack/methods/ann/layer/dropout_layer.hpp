@@ -217,7 +217,7 @@ class DropoutLayer
   bool rescale;
 }; // class DropoutLayer
 
-//! Layer traits for the bias layer.
+//! Layer traits for the Dropout layer.
 template <
   typename InputDataType,
   typename OutputDataType
@@ -230,6 +230,7 @@ class LayerTraits<DropoutLayer<InputDataType, OutputDataType> >
   static const bool IsBiasLayer = false;
   static const bool IsLSTMLayer = false;
   static const bool IsConnection = true;
+  static const bool IsConnectLayer = false;
 };
 
 /**
@@ -245,3 +246,4 @@ using DropoutLayer2D = DropoutLayer<InputDataType, OutputDataType>;
 } // namespace mlpack
 
 #endif
+

@@ -11,7 +11,7 @@
 #include <mlpack/methods/ann/layer/layer_traits.hpp>
 #include <mlpack/methods/ann/convolution_rules/border_modes.hpp>
 #include <mlpack/methods/ann/convolution_rules/naive_convolution.hpp>
-
+#include <mlpack/methods/ann/network_util.hpp>
 namespace mlpack {
 namespace ann /** Artificial Neural Network. */ {
 
@@ -131,10 +131,12 @@ class ConvLayer
         arma::Mat<eT> output;
         BackwardConvolutionRule::Convolution(gy.slice(inMap), rotatedFilter,
             output);
-        g.slice(outMap) += output.submat(rotatedFilter.n_rows / 2,
-                              rotatedFilter.n_cols / 2, 
-                              rotatedFilter.n_rows / 2 + g.n_rows - 1,
-                              rotatedFilter.n_cols / 2 + g.n_cols - 1);
+
+        if (wPad != 0 || hPad != 0)
+          g.slice(outMap) += output.submat(rotatedFilter.n_rows / 2,
+                            rotatedFilter.n_cols / 2, 
+                            rotatedFilter.n_rows / 2 + g.n_rows - 1,
+                            rotatedFilter.n_cols / 2 + g.n_cols - 1);
       }
     }
   }
@@ -269,26 +271,6 @@ class ConvLayer
     return std::floor(size + p * 2 - k) / s + 1;
   }
 
-  template<typename eT>
-  void Pad(const arma::Mat<eT>& input, size_t wPad, size_t hPad, arma::Mat<eT>& output)
-  {
-    if (output.n_rows != input.n_rows + wPad * 2 ||
-        output.n_cols != input.n_cols + hPad * 2)
-      output = arma::zeros(input.n_rows + wPad * 2, input.n_cols + hPad * 2);  
-    output.submat(wPad, hPad, 
-          wPad + input.n_rows - 1,
-          hPad + input.n_cols - 1) = input;
-  }
-
-  template<typename eT>
-  void Pad(const arma::Cube<eT>& input, size_t wPad, size_t hPad, arma::Cube<eT>& output)
-  {
-    output = arma::zeros(input.n_rows + wPad * 2, input.n_cols + hPad * 2, input.n_slices);
-    for (size_t i = 0; i < input.n_slices; ++i)
-      Pad<double>(input.slice(i), wPad, hPad, output.slice(i));
-    
-  }
-
   //! Locally-stored filter/kernel width.
   size_t wfilter;
 
@@ -352,6 +334,7 @@ class LayerTraits<ConvLayer<ForwardConvolutionRule,
   static const bool IsBiasLayer = false;
   static const bool IsLSTMLayer = false;
   static const bool IsConnection = true;
+  static const bool IsConnectLayer = false;
 };
 
 } // namespace ann

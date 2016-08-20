@@ -212,6 +212,27 @@ class CNN
   template<typename Archive>
   void Serialize(Archive& ar, const unsigned int /* version */);
 
+  template<
+      size_t Max = std::tuple_size<LayerTypes>::value - 1,
+      typename... Tp
+  >
+  typename std::enable_if<
+      LayerTraits<typename std::remove_reference<
+      decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+  ChooseLayer(arma::cube& predictors, 
+                arma::mat& responses, 
+                std::tuple<Tp...>& layer);
+  template<
+      size_t Max = std::tuple_size<LayerTypes>::value - 1,
+      typename... Tp
+  >
+  typename std::enable_if<
+      !LayerTraits<typename std::remove_reference<
+      decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+  ChooseLayer(arma::cube& predictors, 
+                arma::mat& responses, 
+                std::tuple<Tp...>& layer);
+
   /**
    * Run a single iteration of the feed forward algorithm, using the given
    * input and target vector, store the calculated error into the error
@@ -266,7 +287,7 @@ class CNN
     LinkParameter<I + 1, Tp...>(network);
   }
 
-/**
+  /**
    * Run a single iteration of the feed backward algorithm, using the given
    * error of the output layer. Note that we iterate backward through the
    * layer modules.
@@ -341,11 +362,23 @@ class CNN
     /* Nothing to do here */
   }
 
-  arma::mat const& Error() const { return error; }
   //! Instantiated convolutional neural network.
+  LayerTypes network;
+
+  // set the Error of the network.
+  arma::mat& Error() { return error; }
+  // get functions.
+  arma::mat const& Error() const { return error; }
 
   LayerTypes const& Layers() const { return network; }
+
+  arma::mat const& Responses() const { return responses; }
+
+  arma::mat const& Parameter() const { return parameter; }  
  
+// if connect layer is present, error of the main net (which contains the connect_layer) = 
+  // networkA.error + networkB.error. now backprop from this error.
+
  private:
   /**
    * Reset the network by setting the layer status.
@@ -392,7 +425,7 @@ class CNN
     outputLayer.CalculateError(
         std::get<sizeof...(Tp) - 1>(network).OutputParameter(), target, error);
 
-    // Masures the network's performance with the specified performance
+    // Measures the network's performance with the specified performance
     // function.
     return performanceFunc.Error(network, target, error);
   }
@@ -407,9 +440,6 @@ class CNN
     outputLayer.OutputClass(std::get<sizeof...(Tp) - 1>(
         network).OutputParameter(), output);
   }
-  
-  //! Instantiated convolutional neural network.
-  LayerTypes network;
 
   //! The outputlayer used to evaluate the network
   OutputLayerType& outputLayer;

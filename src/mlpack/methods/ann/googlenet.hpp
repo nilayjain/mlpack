@@ -86,6 +86,7 @@ class GoogleNet
 
     auto main3 = std::tie(id2, inception4e, pool4, inception5a, inception5b,
                           pool5, drop1, linear1, softmax1);
+    output1.Used(true);
     CNN<decltype(main3), decltype(output1),
         RandomInitialization, MeanSquaredErrorFunction> mainNet3(main3, output1);
 
@@ -105,6 +106,8 @@ class GoogleNet
                           pool3, inception4a, connect1);
     CNN<decltype(main1), decltype(output5),
         RandomInitialization, MeanSquaredErrorFunction> mainNet1(main1, output5);
+
+
   }
 
   void Train()

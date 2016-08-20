@@ -48,6 +48,11 @@ class LayerTraits
    * This is true if the layer is a connection layer.
    **/
   static const bool IsConnection = false;
+
+  /*
+   * This is true if the layer is a connect layer.
+   **/
+  static const bool IsConnectLayer = false;
 };
 
 // This gives us a HasGradientCheck<T, U> type (where U is a function pointer)
@@ -84,3 +89,4 @@ HAS_MEM_FUNC(Reward, HasRewardCheck);
 } // namespace mlpack
 
 #endif
+
