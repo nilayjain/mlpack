@@ -73,6 +73,7 @@ class OneHotLayer
     /* Nothing to do here */
   }
 
+  bool Used() { return used; }
  private:
   //! do we want to infer this layer for final output.
   bool used;
@@ -95,4 +96,3 @@ class LayerTraits<OneHotLayer>
 
 
 #endif
-

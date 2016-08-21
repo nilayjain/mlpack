@@ -212,19 +212,19 @@ template<
 >
 typename std::enable_if<
     LayerTraits<typename std::remove_reference<
-    decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+    decltype(std::get<Max>(LayerTypes)>::type>::IsConnectLayer, void>::type
 CNN<
 LayerTypes, OutputLayerType, InitializationRuleType, PerformanceFunction
 >::ChooseLayer(arma::cube& predictors, 
               arma::mat& responses, 
               std::tuple<Tp...>& layer)
 {
-  ChooseLayer<std::tuple_size<std::get<Max>(layer).NetworkA.network>::value - 1,
+  ChooseLayer<std::tuple_size<decltype(std::get<Max>(layer).NetworkA.network)>::value - 1,
       std::get<Max>(layer).NetworkA.network>
       (predictors, responses, std::get<Max>(layer).NetworkA.network);
 
-  ChooseLayer<std::tuple_size<std::get<Max>(layer).NetworkB.network>::value - 1,
-      std::get<Max>(decltype(layer)).NetworkB.network>
+  ChooseLayer<std::tuple_size<decltype(std::get<Max>(layer).NetworkB.network)>::value - 1,
+      std::get<Max>(layer).NetworkB.network>
       (predictors, responses, std::get<Max>(layer).NetworkB.network);
 }
 
@@ -239,7 +239,7 @@ template<
 >
 typename std::enable_if<
     !LayerTraits<typename std::remove_reference<
-    decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+    decltype(std::get<Max>(LayerTypes))>::type>::IsConnectLayer, void>::type
 CNN<
 LayerTypes, OutputLayerType, InitializationRuleType, PerformanceFunction
 >::ChooseLayer(arma::cube& predictors, 

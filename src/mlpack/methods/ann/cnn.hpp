@@ -218,7 +218,7 @@ class CNN
   >
   typename std::enable_if<
       LayerTraits<typename std::remove_reference<
-      decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+      decltype(std::get<Max>(LayerTypes))>::type>::IsConnectLayer, void>::type
   ChooseLayer(arma::cube& predictors, 
                 arma::mat& responses, 
                 std::tuple<Tp...>& layer);
@@ -228,7 +228,7 @@ class CNN
   >
   typename std::enable_if<
       !LayerTraits<typename std::remove_reference<
-      decltype(std::get<Max>(sizeof...(Tp)))>::type>::IsConnectLayer, void>::type
+      decltype(std::get<Max>(LayerTypes))>::type>::IsConnectLayer, void>::type
   ChooseLayer(arma::cube& predictors, 
                 arma::mat& responses, 
                 std::tuple<Tp...>& layer);
