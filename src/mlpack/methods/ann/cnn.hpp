@@ -212,27 +212,6 @@ class CNN
   template<typename Archive>
   void Serialize(Archive& ar, const unsigned int /* version */);
 
-  template<
-      size_t Max = std::tuple_size<LayerTypes>::value - 1,
-      typename... Tp
-  >
-  typename std::enable_if<
-      LayerTraits<typename std::remove_reference<
-      decltype(std::get<Max>(LayerTypes))>::type>::IsConnectLayer, void>::type
-  ChooseLayer(arma::cube& predictors, 
-                arma::mat& responses, 
-                std::tuple<Tp...>& layer);
-  template<
-      size_t Max = std::tuple_size<LayerTypes>::value - 1,
-      typename... Tp
-  >
-  typename std::enable_if<
-      !LayerTraits<typename std::remove_reference<
-      decltype(std::get<Max>(LayerTypes))>::type>::IsConnectLayer, void>::type
-  ChooseLayer(arma::cube& predictors, 
-                arma::mat& responses, 
-                std::tuple<Tp...>& layer);
-
   /**
    * Run a single iteration of the feed forward algorithm, using the given
    * input and target vector, store the calculated error into the error
@@ -277,8 +256,10 @@ class CNN
   typename std::enable_if<I < sizeof...(Tp), void>::type
   LinkParameter(std::tuple<Tp...>& network)
   {
-    if (!LayerTraits<typename std::remove_reference<
-        decltype(std::get<I>(network))>::type>::IsBiasLayer)
+    if (!(LayerTraits<typename std::remove_reference<
+        decltype(std::get<I>(network))>::type>::IsBiasLayer || 
+        LayerTraits<typename std::remove_reference<
+        decltype(std::get<I>(network))>::type>::IsConnectLayer))
     {
       std::get<I>(network).InputParameter() = std::get<I - 1>(
           network).OutputParameter();
@@ -362,6 +343,33 @@ class CNN
     /* Nothing to do here */
   }
 
+  /*
+   * Calculate the output error and update the overall error.
+   */
+  template<typename DataType, typename ErrorType, typename... Tp>
+  double OutputError(const DataType& target,
+                     ErrorType& error,
+                     const std::tuple<Tp...>& network)
+  {
+    // Calculate and store the output error.
+    outputLayer.CalculateError(
+        std::get<sizeof...(Tp) - 1>(network).OutputParameter(), target, error);
+
+    // Measures the network's performance with the specified performance
+    // function.
+    return performanceFunc.Error(network, target, error);
+  }
+  
+  /*
+   * Calculate and store the output activation.
+   */
+  template<typename DataType, typename... Tp>
+  void OutputPrediction(DataType& output, std::tuple<Tp...>& network)
+  {
+    // Calculate and store the output prediction.
+    outputLayer.OutputClass(std::get<sizeof...(Tp) - 1>(
+        network).OutputParameter(), output);
+  }
   //! Instantiated convolutional neural network.
   LayerTypes network;
 
@@ -372,9 +380,15 @@ class CNN
 
   LayerTypes const& Layers() const { return network; }
 
+  LayerTypes& Layers() { return network; }
+
   arma::mat const& Responses() const { return responses; }
 
-  arma::mat const& Parameter() const { return parameter; }  
+  arma::mat& Responses() { return responses; }  
+
+  arma::mat const& Parameter() const { return parameter; }
+
+  arma::mat& Parameter(){ return parameter; }  
  
 // if connect layer is present, error of the main net (which contains the connect_layer) = 
   // networkA.error + networkB.error. now backprop from this error.
@@ -411,34 +425,6 @@ class CNN
   typename std::enable_if<
       !HasDeterministicCheck<T, bool&(T::*)(void)>::value, void>::type
   ResetDeterministic(T& /* unused */) { /* Nothing to do here */
-  }
-
-  /*
-   * Calculate the output error and update the overall error.
-   */
-  template<typename DataType, typename ErrorType, typename... Tp>
-  double OutputError(const DataType& target,
-                     ErrorType& error,
-                     const std::tuple<Tp...>& network)
-  {
-    // Calculate and store the output error.
-    outputLayer.CalculateError(
-        std::get<sizeof...(Tp) - 1>(network).OutputParameter(), target, error);
-
-    // Measures the network's performance with the specified performance
-    // function.
-    return performanceFunc.Error(network, target, error);
-  }
-  
-  /*
-   * Calculate and store the output activation.
-   */
-  template<typename DataType, typename... Tp>
-  void OutputPrediction(DataType& output, std::tuple<Tp...>& network)
-  {
-    // Calculate and store the output prediction.
-    outputLayer.OutputClass(std::get<sizeof...(Tp) - 1>(
-        network).OutputParameter(), output);
   }
 
   //! The outputlayer used to evaluate the network

@@ -24,8 +24,7 @@ class OneHotLayer
   /**
    * Create the OneHotLayer object.
    */
-  OneHotLayer(bool used = true) :
-    used(used)
+  OneHotLayer()
   {
     // Nothing to do here.
   }
@@ -73,10 +72,6 @@ class OneHotLayer
     /* Nothing to do here */
   }
 
-  bool Used() { return used; }
- private:
-  //! do we want to infer this layer for final output.
-  bool used;
 }; // class OneHotLayer
 
 //! Layer traits for the one-hot class classification layer.
@@ -96,3 +91,4 @@ class LayerTraits<OneHotLayer>
 
 
 #endif
+

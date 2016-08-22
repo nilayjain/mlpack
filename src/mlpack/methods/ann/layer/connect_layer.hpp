@@ -26,12 +26,11 @@ class ConnectLayer
 {
  public:
   template<typename NetworkA, typename NetworkB>
-  ConnectLayer(NetworkA networkA, NetworkB networkB, size_t outNet = 1):
+  ConnectLayer(NetworkA networkA, NetworkB networkB):
     networkA(std::forward<NetworkA>(networkA)),
     networkB(std::forward<NetworkB>(networkB)),
     firstRun(true),
-    index(0),
-    outNet(outNet)
+    index(0)
   {
     static_assert(std::is_same<typename std::decay<NetworkA>::type,
                   NetworkTypeA>::value,
@@ -62,16 +61,37 @@ class ConnectLayer
         network).OutputParameter()) + NetworkSize<I + 1, Tp...>(network);
   }
 
-  template<typename eT>
-  void Forward(const arma::Cube<eT>& input, arma::Mat<eT>& output)
+  template<size_t I = 0, typename... Tp, typename LayerTypes>
+  typename std::enable_if<I < sizeof...(Tp), void>::type
+  NetworkWeights(arma::mat& weights,
+                 LayerTypes& network,
+                 size_t offset)
+  {
+    NetworkWeights<I + 1, Tp...>(weights, network,
+        offset + LayerWeights(std::get<I>(network), weights,
+        offset, std::get<I>(network).OutputParameter()));
+
+  }
+
+  template<size_t I = 0, typename... Tp, typename LayerTypes>
+  typename std::enable_if<I == sizeof...(Tp), void>::type
+  NetworkWeights(arma::mat& /* unused */,
+                 LayerTypes& /* unused */,
+                 size_t /* unused */)
+  {
+    /* Nothing to do here */
+  }
+
+  
+  template<typename InputType, typename OutputType>
+  void Forward(const InputType& input, OutputType& output)
   {
     if (firstRun)
     {
-      NetworkWeights(networkA.Parameter(), networkA);
-      NetworkWeights(networkB.Parameter(), networkB, networkASize);
+      NetworkWeights(networkA.Parameter(), networkA.Layers(), 0);
+      NetworkWeights(networkB.Parameter(), networkB.Layers(), networkASize);
       firstRun = false;
     }
-
     networkA.Forward(input, networkA.Layers());
     networkA.OutputError(arma::mat(networkA.Responses().colptr(index),
                          networkA.Responses().n_rows, 1, false,
@@ -138,9 +158,6 @@ class ConnectLayer
   //! the index for the sample in the given dataset.
   size_t index;
 
-  //! whether networkA or networkB contains the prediction Layer.
-  size_t outNet;
-
   //! Locally-stored run parameter used to initalize the layer once.
   bool firstRun;
 
@@ -167,8 +184,8 @@ class ConnectLayer
 template<
     typename NetworkTypeA,
     typename NetworkTypeB,
-    typename InputDataType = arma::cube,
-    typename OutputDataType = arma::mat
+    typename InputDataType,
+    typename OutputDataType
 >
 class LayerTraits<ConnectLayer<NetworkTypeA, NetworkTypeB, 
                       InputDataType, OutputDataType> >

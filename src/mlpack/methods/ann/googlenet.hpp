@@ -34,6 +34,50 @@
 
 namespace mlpack {
 namespace ann /** Artificial Neural Network. */ {
+
+template<typename MainNetwork1, typename MainNetwork2, typename MainNetwork3,
+         typename AuxNetwork1, typename AuxNetwork2>
+class GoogleNetModel
+{
+ public:
+  template<typename MainNetType1, typename MainNetType2, typename MainNetType3,
+            typename AuxNetType1, typename AuxNetType2>
+  GoogleNetModel(MainNetType1 M1, MainNetType2 M2, MainNetType3 M3,
+                 AuxNetType1 A1, AuxNetType2 A2) :
+    M1(std::forward<MainNetType1>(M1)),
+    M2(std::forward<MainNetType2>(M2)),
+    M3(std::forward<MainNetType3>(M3)),
+    A1(std::forward<AuxNetType1>(A1)),
+    A2(std::forward<AuxNetType2>(A2))
+  {
+    static_assert(std::is_same<typename std::decay<MainNetType1>::type,
+                  MainNetwork1>::value,
+                  "The type of M1 must be MainNetwork1.");
+
+    static_assert(std::is_same<typename std::decay<MainNetType2>::type,
+                  MainNetwork2>::value,
+                  "The type of M2 must be MainNetwork2.");
+
+    static_assert(std::is_same<typename std::decay<MainNetType3>::type,
+                  MainNetwork3>::value,
+                  "The type of M3 must be MainNetwork3.");
+
+    static_assert(std::is_same<typename std::decay<AuxNetType1>::type,
+                  AuxNetwork1>::value,
+                  "The type of A1 must be AuxNetwork1.");
+
+    static_assert(std::is_same<typename std::decay<AuxNetType2>::type,
+                  AuxNetwork2>::value,
+                  "The type of A2 must be AuxNetwork2.");
+  }
+
+  MainNetwork1 M1;
+  MainNetwork2 M2;
+  MainNetwork3 M3;
+  AuxNetwork1 A1;
+  AuxNetwork2 A2;
+};
+
 class GoogleNet
 {
  public:
@@ -67,53 +111,89 @@ class GoogleNet
     inception5b(832, 384, 192, 384, 48, 128, 128),
     pool5(7, 1),
     drop1(0.4),
-    linear1(1024, 1000),
+    linear1(1024, 10),
     pool6(5, 3),
     conv3(512, 128, 1, 1, 1, 1, 1, 1),
     linear2(4 * 4 * 128, 1024),
     drop2(0.7),
-    linear3(1024, 1000),
+    linear3(1024, 10),
     pool7(5, 3),
     conv4(528, 128, 1, 1, 1, 1, 1, 1),
     linear4(4 * 4 * 128, 1024),
     drop3(0.7),
-    linear5(1024, 1000)
+    linear5(1024, 10)
   {
 
     auto aux2 = std::tie(pool7, conv4, base4, linear4, drop3, linear5, softmax3);
     CNN<decltype(aux2), decltype(output3),
-        RandomInitialization, MeanSquaredErrorFunction> auxNet2(aux2, output3);
+        RandomInitialization, MeanSquaredErrorFunction> AuxNetwork2(aux2, output3);
 
     auto main3 = std::tie(id2, inception4e, pool4, inception5a, inception5b,
                           pool5, drop1, linear1, softmax1);
-    output1.Used(true);
     CNN<decltype(main3), decltype(output1),
-        RandomInitialization, MeanSquaredErrorFunction> mainNet3(main3, output1);
+        RandomInitialization, MeanSquaredErrorFunction> MainNetwork3(main3, output1);
 
-    auto connect2 = ConnectLayer<decltype(mainNet3), decltype(auxNet2)>(mainNet3, auxNet2);
+    auto connect2 = ConnectLayer<decltype(MainNetwork3), decltype(AuxNetwork2)>
+                    (MainNetwork3, AuxNetwork2);
     
     auto aux1 = std::tie(pool6, conv3, base3, linear2, drop2, linear3, softmax2);
     CNN<decltype(aux1), decltype(output2),
-        RandomInitialization, MeanSquaredErrorFunction> auxNet1(aux1, output2);
+        RandomInitialization, MeanSquaredErrorFunction> AuxNetwork1(aux1, output2);
 
     auto main2 = std::tie(id1, inception4b, inception4c, inception4d, connect2);
     CNN<decltype(main2), decltype(output4),
-        RandomInitialization, MeanSquaredErrorFunction> mainNet2(main2, output4);    
+        RandomInitialization, MeanSquaredErrorFunction> MainNetwork2(main2, output4);    
 
-    auto connect1 = ConnectLayer<decltype(mainNet2), decltype(auxNet1)>(mainNet2, auxNet1);
+    auto connect1 = ConnectLayer<decltype(MainNetwork2), decltype(AuxNetwork1)>(MainNetwork2, AuxNetwork1);
 
     auto main1 = std::tie(conv1, pool1, conv2, base2, pool2, inception3a, inception3b, 
                           pool3, inception4a, connect1);
-    CNN<decltype(main1), decltype(output5),
-        RandomInitialization, MeanSquaredErrorFunction> mainNet1(main1, output5);
+    CNN<decltype(main1), decltype(output1),
+        RandomInitialization, MeanSquaredErrorFunction> MainNetwork1(main1, output1);
 
+    GoogleNetModel<decltype(MainNetwork1), decltype(MainNetwork2), 
+                   decltype(MainNetwork3), decltype(AuxNetwork1), 
+                   decltype(AuxNetwork2)> G(MainNetwork1, MainNetwork2, 
+                    MainNetwork3, AuxNetwork1, AuxNetwork2);
 
+    // train googlenet.
+
+    arma::mat X;
+    X.load("mnist_first250_training_4s_and_9s.arm");
+
+    // Normalize each point since these are images.
+    arma::uword nPoints = X.n_cols;
+    for (arma::uword i = 0; i < nPoints; i++)
+    {
+      X.col(i) /= norm(X.col(i), 2);
+    }
+
+    // Build the target matrix.
+    arma::mat Y = arma::zeros<arma::mat>(10, nPoints);
+    for (size_t i = 0; i < nPoints; i++)
+    {
+      if (i < nPoints / 2)
+      {
+        Y.col(i)(5) = 1;
+      }
+      else
+      {
+        Y.col(i)(8) = 1;
+      }
+    }
+
+    arma::cube input = arma::cube(28, 28, nPoints);
+    for (size_t i = 0; i < nPoints; i++)
+      input.slice(i) = arma::mat(X.colptr(i), 28, 28);
+
+    optimization::RMSprop<decltype(G.M1)> opt(G.M1, 0.01, 0.88, 1e-8, 10 * input.n_slices, 0);
+
+    G.M1.Train(input, Y, opt);
+
+    arma::mat prediction;
+    G.M1.Predict(input, prediction);
   }
 
-  void Train()
-  {
-     
-  }
 };
 
 } // namespace ann
