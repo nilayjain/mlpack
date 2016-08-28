@@ -29,8 +29,8 @@ class ConnectLayer
   ConnectLayer(NetworkA networkA, NetworkB networkB):
     networkA(std::forward<NetworkA>(networkA)),
     networkB(std::forward<NetworkB>(networkB)),
-    firstRun(true),
-    index(0)
+    index(0),
+    firstRun(true)
   {
     static_assert(std::is_same<typename std::decay<NetworkA>::type,
                   NetworkTypeA>::value,
@@ -83,8 +83,7 @@ class ConnectLayer
   }
 
   
-  template<typename InputType, typename OutputType>
-  void Forward(const InputType& input, OutputType& output)
+  void Forward(const InputDataType& input, OutputDataType& )
   {
     if (firstRun)
     {
@@ -92,6 +91,7 @@ class ConnectLayer
       NetworkWeights(networkB.Parameter(), networkB.Layers(), networkASize);
       firstRun = false;
     }
+    InputParameter() = input;
     networkA.Forward(input, networkA.Layers());
     networkA.OutputError(arma::mat(networkA.Responses().colptr(index),
                          networkA.Responses().n_rows, 1, false,
@@ -101,19 +101,30 @@ class ConnectLayer
     networkB.OutputError(arma::mat(networkB.Responses().colptr(index), 
                          networkB.Responses().n_rows, 1, false,
                          true), networkB.Error(), networkB.Layers());
-    Delta() = networkA.Error() + networkB.Error();
+
+    delta = networkA.Error() + networkB.Error();
+    // for debug:
+    // std::cout << networkA.Error().size() << std::endl;
+    // std::cout << networkB.Error().size() << std::endl;
+    // std::cout << input.size() << std::endl;
+    storeDelta();
     index++;
   }
 
-  template<typename eT>
-  void Backward(arma::Cube<eT>& , arma::Cube<eT>& , arma::Cube<eT>& )
+
+  template<typename InputType, typename InputErrorType, typename OutputErrorType>
+  void Backward(const InputType& /* unused */,
+                const InputErrorType& /* unused */,
+                OutputErrorType& /* unused */)
   {
     networkA.Backward(networkA.Error(), networkA.Layers());
     networkB.Backward(networkB.Error(), networkB.Layers());
   }
 
-  template<typename eT>
-  void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>& gradient)
+  template<typename InputType, typename ErrorType, typename GradientType>
+  void Gradient(const InputType& /* unused */,
+                const ErrorType& /* unused */,
+                GradientType& gradient)
   {
     NetworkGradients(gradient, networkA.Layers());
     NetworkGradients(gradient, networkB.Layers(), networkASize);
@@ -137,10 +148,60 @@ class ConnectLayer
   //! Modify the output parameter.
   OutputDataType& OutputParameter() { return outputParameter; }
 
+  template<class DeltaType = InputDataType>
+  typename std::enable_if <std::is_same<DeltaType, arma::mat>::value, void>::type
+  storeDelta()
+  {
+    /* Nothing to do */
+  }
+  template<class DeltaType = InputDataType>
+  typename std::enable_if <!std::is_same<DeltaType, arma::mat>::value, void>::type
+  storeDelta()
+  {    
+    arma::cube error(InputParameter().n_rows, InputParameter().n_cols, 
+                        InputParameter().n_slices);
+    size_t rowIdx = 0, colIdx = 0;
+    for (size_t i = 0; i < InputParameter().n_slices; ++i)
+    {
+      error.slice(i) = delta.submat(rowIdx, 
+                          rowIdx + InputParameter().n_rows - 1, 
+                          colIdx, colIdx + InputParameter().n_cols - 1);
+      rowIdx += InputParameter().n_rows;
+      colIdx += InputParameter().n_cols;
+    }
+
+    Delta() = error;
+  }
+
   //! Get the delta.
-  OutputDataType const& Delta() const { return delta; }
-  //! Modify the delta.
-  OutputDataType& Delta() { return delta; }
+  template<class DeltaType = InputDataType>
+  typename std::enable_if <std::is_same<DeltaType, arma::mat>::value, OutputDataType&>::type const
+  Delta() const 
+  {
+    return delta; 
+  }
+
+  template<class DeltaType = InputDataType>
+  typename std::enable_if <!std::is_same<DeltaType, arma::mat>::value, InputDataType&>::type const
+  Delta() const 
+  {
+    return modifiedDelta;
+  }
+  
+  //! Get the delta.
+  template<class DeltaType = InputDataType>
+  typename std::enable_if <std::is_same<DeltaType, arma::mat>::value, OutputDataType& >::type
+  Delta() 
+  {
+    return delta; 
+  }
+
+  template<class DeltaType = InputDataType>
+  typename std::enable_if <!std::is_same<DeltaType, arma::mat>::value, InputDataType&>::type
+  Delta() 
+  {
+    return modifiedDelta;
+  }
 
   //! Get the gradient.
   OutputDataType const& Gradient() const { return gradient; }
@@ -166,6 +227,9 @@ class ConnectLayer
 
   //! Locally-stored delta object.
   OutputDataType delta;
+
+  //! Locally-stored modifiedDelta object.
+  InputDataType modifiedDelta;
 
   //! Locally-stored gradient object.
   OutputDataType gradient;

@@ -83,10 +83,11 @@ class GoogleNet
  public:
   ConvLayer<> conv1, conv2, conv3, conv4;
   BaseLayer2D<RectifierFunction> base1, base2, base3, base4;
-  BaseLayer<IdentityFunction, arma::cube, arma::cube> id1, id2;
+  BaseLayer<IdentityFunction, arma::cube, arma::cube> id1, id2, id3;
   InceptionLayer<> inception3a, inception3b, inception4a, inception4b,
       inception4c, inception4d, inception4e, inception5a, inception5b;
-  LinearMappingLayer<> linear1, linear2, linear3, linear4, linear5;
+  LinearMappingLayer<>  linear2, linear3, linear4, linear5;
+  LinearMappingLayer<arma::cube, arma::mat> linear1, linear6;
   DropoutLayer<> drop1, drop2, drop3;
   SoftmaxLayer<> softmax1, softmax2, softmax3;
   PoolingLayer<MaxPooling> pool1, pool2, pool3, pool4;
@@ -121,40 +122,47 @@ class GoogleNet
     conv4(528, 128, 1, 1, 1, 1, 1, 1),
     linear4(4 * 4 * 128, 1024),
     drop3(0.7),
-    linear5(1024, 10)
+    linear5(1024, 10),
+    linear6(512, 256)
   {
 
-    auto aux2 = std::tie(pool7, conv4, base4, linear4, drop3, linear5, softmax3);
-    CNN<decltype(aux2), decltype(output3),
-        RandomInitialization, MeanSquaredErrorFunction> AuxNetwork2(aux2, output3);
+    // auto aux2 = std::tie(pool7, conv4, base4, linear4, drop3, linear5, softmax3);
+    // CNN<decltype(aux2), decltype(output3),
+    //     RandomInitialization, MeanSquaredErrorFunction> AuxNetwork2(aux2, output3);
 
-    auto main3 = std::tie(id2, inception4e, pool4, inception5a, inception5b,
-                          pool5, drop1, linear1, softmax1);
-    CNN<decltype(main3), decltype(output1),
-        RandomInitialization, MeanSquaredErrorFunction> MainNetwork3(main3, output1);
+    // auto main3 = std::tie(id2, inception4e, pool4, inception5a, inception5b,
+    //                       pool5, drop1, linear1, softmax1);
+    // CNN<decltype(main3), decltype(output1),
+    //     RandomInitialization, MeanSquaredErrorFunction> MainNetwork3(main3, output1);
 
-    auto connect2 = ConnectLayer<decltype(MainNetwork3), decltype(AuxNetwork2)>
-                    (MainNetwork3, AuxNetwork2);
+    // auto connect2 = ConnectLayer<decltype(MainNetwork3), decltype(AuxNetwork2)>
+    //                 (MainNetwork3, AuxNetwork2);
     
-    auto aux1 = std::tie(pool6, conv3, base3, linear2, drop2, linear3, softmax2);
-    CNN<decltype(aux1), decltype(output2),
-        RandomInitialization, MeanSquaredErrorFunction> AuxNetwork1(aux1, output2);
+    // auto aux1 = std::tie(pool6, conv3, base3, linear2, drop2, linear3, softmax2);
+    // CNN<decltype(aux1), decltype(output2),
+    //     RandomInitialization, MeanSquaredErrorFunction> AuxNetwork1(aux1, output2);
 
-    auto main2 = std::tie(id1, inception4b, inception4c, inception4d, connect2);
+    auto main2 = std::tie(id1, inception4b, inception4c, inception4d, linear1, softmax1);
     CNN<decltype(main2), decltype(output4),
-        RandomInitialization, MeanSquaredErrorFunction> MainNetwork2(main2, output4);    
+        RandomInitialization, MeanSquaredErrorFunction> MainNetwork2(main2, output4);
 
-    auto connect1 = ConnectLayer<decltype(MainNetwork2), decltype(AuxNetwork1)>(MainNetwork2, AuxNetwork1);
+    auto connect1 = ConnectLayer<decltype(MainNetwork2), decltype(MainNetwork2)>(MainNetwork2, MainNetwork2);
 
-    auto main1 = std::tie(conv1, pool1, conv2, base2, pool2, inception3a, inception3b, 
+    auto main1 = std::tie(conv1, pool1, conv2, base2, pool2, inception3a, inception3b,
                           pool3, inception4a, connect1);
     CNN<decltype(main1), decltype(output1),
         RandomInitialization, MeanSquaredErrorFunction> MainNetwork1(main1, output1);
 
-    GoogleNetModel<decltype(MainNetwork1), decltype(MainNetwork2), 
-                   decltype(MainNetwork3), decltype(AuxNetwork1), 
-                   decltype(AuxNetwork2)> G(MainNetwork1, MainNetwork2, 
-                    MainNetwork3, AuxNetwork1, AuxNetwork2);
+    GoogleNetModel<decltype(MainNetwork1),
+                   decltype(MainNetwork1),
+                   decltype(MainNetwork1),
+                   decltype(MainNetwork1),
+                   decltype(MainNetwork1)>
+        G(MainNetwork1,
+          MainNetwork1,
+          MainNetwork1,
+          MainNetwork1,
+          MainNetwork1);
 
     // train googlenet.
 
@@ -190,8 +198,8 @@ class GoogleNet
 
     G.M1.Train(input, Y, opt);
 
-    arma::mat prediction;
-    G.M1.Predict(input, prediction);
+    // arma::mat prediction;
+    // G.M1.Predict(input, prediction);
   }
 
 };

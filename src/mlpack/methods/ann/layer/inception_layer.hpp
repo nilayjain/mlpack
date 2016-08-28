@@ -93,7 +93,14 @@ class InceptionLayer
       bias5(out5, bias),
       biasPool(poolProj, bias)
   {
-    /* Nothing to do. */
+    size_t size = conv1.Weights().n_elem + bias1.Weights().n_elem + 
+                  proj3.Weights().n_elem + biasProj3.Weights().n_elem +
+                  conv3.Weights().n_elem + bias3.Weights().n_elem +
+                  proj5.Weights().n_elem + biasProj5.Weights().n_elem +
+                  conv5.Weights().n_elem + bias5.Weights().n_elem +
+                  convPool.Weights().n_elem + biasPool.Weights().n_elem;
+
+    weights.set_size(size, 1, 1);
   }
 
   // perform forward passes for all the layers.
@@ -158,34 +165,47 @@ class InceptionLayer
   // g : calcualted gradient.
   // populate delta for all the layers.
   // size of delta = size of inputParameter.
+  template<typename InputType, typename GradientType, typename eT>
+  void Backward(InputType& , arma::Mat<eT>& error, GradientType& )
+  {
+    std::cout << "something's wrong type of ErrorType is matrix..." << std::endl;
+  }
+
   template<typename eT>
-  void Backward(arma::Cube<eT>&, arma::Cube<eT>& error, arma::Cube<eT>& )
+  void Backward(arma::Cube<eT>& , arma::Cube<eT>& error, arma::Cube<eT>& )
   {
     InputDataType in;
     size_t slice_idx = 0;
 
-    arma::cube subError = error.slices(slice_idx, slice_idx + base1.OutputParameter().n_slices - 1);
+    arma::cube subError = error.slices(slice_idx, slice_idx + 
+                          base1.OutputParameter().n_slices - 1);
     slice_idx += base1.OutputParameter().n_slices;
     base1.Backward(base1.OutputParameter(), subError, base1.Delta());
     bias1.Backward(bias1.OutputParameter(), base1.Delta(), bias1.Delta());
     conv1.Backward(conv1.OutputParameter(), bias1.Delta(), conv1.Delta());
 
-    subError = error.slices(slice_idx, slice_idx + base3.OutputParameter().n_slices - 1);
+    subError = error.slices(slice_idx, slice_idx + 
+                base3.OutputParameter().n_slices - 1);
     slice_idx += base3.OutputParameter().n_slices;
     base3.Backward(base3.OutputParameter(), subError, base3.Delta());
     bias3.Backward(bias3.OutputParameter(), base3.Delta(), bias3.Delta());
     conv3.Backward(conv3.OutputParameter(), bias3.Delta(), conv3.Delta());
-    baseProj3.Backward(baseProj3.OutputParameter(), conv3.Delta(), baseProj3.Delta());
-    biasProj3.Backward(biasProj3.OutputParameter(), baseProj3.Delta(), biasProj3.Delta());
+    baseProj3.Backward(baseProj3.OutputParameter(), 
+                        conv3.Delta(), baseProj3.Delta());
+    biasProj3.Backward(biasProj3.OutputParameter(), 
+                        baseProj3.Delta(), biasProj3.Delta());
     proj3.Backward(proj3.OutputParameter(), biasProj3.Delta(), proj3.Delta());
 
-    subError = error.slices(slice_idx, slice_idx + base5.OutputParameter().n_slices - 1);
+    subError = error.slices(slice_idx, slice_idx + 
+                base5.OutputParameter().n_slices - 1);
     slice_idx += base5.OutputParameter().n_slices;
     base5.Backward(base5.OutputParameter(), subError, base5.Delta());
     bias5.Backward(bias5.OutputParameter(), base5.Delta(), bias5.Delta());
     conv5.Backward(conv5.OutputParameter(), bias5.Delta(), conv5.Delta());
-    baseProj5.Backward(baseProj5.OutputParameter(), conv5.Delta(), baseProj5.Delta());
-    biasProj5.Backward(biasProj5.OutputParameter(), baseProj5.Delta(), biasProj5.Delta());
+    baseProj5.Backward(baseProj5.OutputParameter(), 
+                      conv5.Delta(), baseProj5.Delta());
+    biasProj5.Backward(biasProj5.OutputParameter(), 
+                        baseProj5.Delta(), biasProj5.Delta());
     proj5.Backward(proj5.OutputParameter(), biasProj5.Delta(), proj5.Delta());
 
     subError = error.slices(slice_idx, slice_idx + basePool.OutputParameter().n_slices - 1);
@@ -197,8 +217,11 @@ class InceptionLayer
   }
 
   template<typename eT>
-  void Gradient(const arma::Cube<eT>&, arma::Cube<eT>& delta, arma::Cube<eT>&)
+  void Gradient(const arma::Cube<eT>& input,
+                const arma::Cube<eT>& error,
+                arma::Cube<eT>& gradient)
   {
+
     size_t slice_idx = 0;
     arma::cube deltaNext = delta.slices(slice_idx, slice_idx + bias1.OutputParameter().n_slices - 1);
     conv1.Gradient(conv1.InputParameter(), bias1.Delta(), conv1.Gradient());
