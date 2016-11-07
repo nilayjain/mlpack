@@ -1,16 +1,21 @@
 /**
  * @file pooling_layer.hpp
  * @author Marcus Edel
+ * @author Nilay Jain
  *
  * Definition of the PoolingLayer class, which attaches various pooling
  * functions to the embedding layer.
+ *
+ * mlpack is free software; you may redistribute it and/or modify it under the
+ * terms of the 3-clause BSD license.  You should have received a copy of the
+ * 3-clause BSD license along with mlpack.  If not, see
+ * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #ifndef MLPACK_METHODS_ANN_LAYER_POOLING_LAYER_HPP
 #define MLPACK_METHODS_ANN_LAYER_POOLING_LAYER_HPP
 
 #include <mlpack/core.hpp>
 #include <mlpack/methods/ann/pooling_rules/mean_pooling.hpp>
-
 #include <mlpack/methods/ann/layer/layer_traits.hpp>
 
 namespace mlpack {
@@ -38,11 +43,15 @@ class PoolingLayer
    * Create the PoolingLayer object using the specified number of units.
    *
    * @param kSize Size of the pooling window.
+   * @param stride The stride of the convolution operation.
    * @param pooling The pooling strategy.
    */
-  PoolingLayer(const size_t kSize, const size_t stride = 1,
-              PoolingRule pooling = PoolingRule()) :
-      kSize(kSize), stride(stride), pooling(pooling)
+  PoolingLayer(const size_t kSize,
+               const size_t stride = 1,
+               PoolingRule pooling = PoolingRule()) :
+      kSize(kSize),
+      stride(stride),
+      pooling(pooling)
   {
     // Nothing to do here.
   }
@@ -71,7 +80,7 @@ class PoolingLayer
   void Forward(const arma::Cube<eT>& input, arma::Cube<eT>& output)
   {
     output = arma::zeros<arma::Cube<eT> >((input.n_rows - kSize) / stride + 1,
-                            (input.n_cols - kSize) / stride + 1, input.n_slices);
+        (input.n_cols - kSize) / stride + 1, input.n_slices);
 
     for (size_t s = 0; s < input.n_slices; s++)
       Pooling(input.slice(s), output.slice(s));
@@ -177,9 +186,9 @@ class PoolingLayer
     {
       for (size_t i = 0, rowidx = 0; i < output.n_rows; ++i, rowidx += stride)
       {
-        output(i, j) += pooling.Pooling(
-            input(arma::span(rowidx, rowidx + rStep - 1), 
-              arma::span(colidx, colidx + cStep - 1)));
+        output(i, j) += pooling.Pooling(input(
+            arma::span(rowidx, rowidx + rStep - 1),
+            arma::span(colidx, colidx + cStep - 1)));
       }
     }
   }
@@ -204,7 +213,7 @@ class PoolingLayer
       for (size_t i = 0; i < input.n_rows; i += rStep)
       {
         const arma::Mat<eT>& inputArea = input(arma::span(i, i + rStep - 1),
-                                               arma::span(j, j + cStep - 1));
+            arma::span(j, j + cStep - 1));
 
         pooling.Unpooling(inputArea, error(i / rStep, j / cStep),
             unpooledError);
@@ -221,6 +230,9 @@ class PoolingLayer
   //! Locally-stored stride value by which we move filter.
   size_t stride;
 
+  //! Locally-stored pooling strategy.
+  PoolingRule pooling;
+
   //! Locally-stored delta object.
   OutputDataType delta;
 
@@ -229,9 +241,6 @@ class PoolingLayer
 
   //! Locally-stored output parameter object.
   OutputDataType outputParameter;
-
-  //! Locally-stored pooling strategy.
-  PoolingRule pooling;
 }; // class PoolingLayer
 
 //! Layer traits for the pooling layer.
@@ -248,7 +257,6 @@ class LayerTraits<PoolingLayer<PoolingRule, InputDataType, OutputDataType> >
   static const bool IsBiasLayer = false;
   static const bool IsLSTMLayer = false;
   static const bool IsConnection = true;
-  static const bool IsConnectLayer = false;
 };
 
 
